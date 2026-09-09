@@ -1,0 +1,52 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta name="theme-color" content="#6750e5">
+  <title>Голос — озвучка текста</title>
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <style>
+    :root{--bg:#f3f4f7;--card:#fff;--ink:#22232b;--muted:#777583;--line:#e2e2e9;--violet:#6750e5}*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--ink);font:16px/1.45 Arial,sans-serif}button,select,textarea,input{font:inherit}button{cursor:pointer}header{height:76px;display:flex;align-items:center;justify-content:space-between;max-width:1080px;margin:auto;padding:0 22px;border-bottom:1px solid var(--line)}.logo{font-size:28px;font-weight:800}.logo i{font-style:normal;color:var(--violet)}.badge{font-size:12px;color:#675c7a;background:#fff;border:1px solid var(--line);border-radius:99px;padding:8px 12px}main{max-width:1080px;margin:auto;padding:34px 22px 24px}.eyebrow{color:#725fc2;font-size:12px;font-weight:700;letter-spacing:1.6px}h1{font-size:40px;letter-spacing:-1.5px;margin:8px 0 7px}h1 i{font-style:normal;color:var(--violet)}.lead{color:var(--muted);margin:0 0 27px}.grid{display:grid;grid-template-columns:minmax(0,1.5fr) minmax(310px,1fr);gap:20px}.card{background:var(--card);border:1px solid var(--line);border-radius:20px;overflow:hidden}.head{display:flex;align-items:center;justify-content:space-between;padding:22px 24px}.head h2{font-size:17px;margin:0}.step{font-size:12px;color:#817991;border:1px solid var(--line);border-radius:6px;padding:4px;margin-right:8px}.clear{border:0;background:none;color:#837d8d;padding:5px}textarea{display:block;width:100%;min-height:320px;border:0;resize:vertical;padding:15px 24px;font-size:17px;line-height:1.75;color:var(--ink);outline:0}textarea::placeholder{color:#9995a1}.meta{display:flex;justify-content:space-between;padding:14px 24px 20px;color:var(--muted);font-size:13px}.example{border:0;background:none;color:#6d56c8;padding:0}.actions{border-top:1px solid var(--line);background:#fcfcfe;padding:18px 24px;display:flex;justify-content:space-between;align-items:center;gap:12px}.actions small{color:var(--muted)}.buttons{display:flex;gap:8px}.primary,.secondary{border-radius:11px;padding:13px 17px;border:0;font-weight:600}.primary{background:var(--violet);color:white}.secondary{background:#f0edf9;color:#5f507d}.settings{padding:22px 24px}.settings h2{font-size:17px;margin:0 0 22px}.field{margin:18px 0 8px;font-size:14px;font-weight:700}.value{float:right;background:#eeeaff;color:#6e55cd;padding:2px 7px;border-radius:6px}select{width:100%;border:1px solid var(--line);border-radius:10px;background:#fff;padding:12px;color:var(--ink)}input[type=range]{width:100%;accent-color:var(--violet)}.range-labels{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.notice{margin-top:18px;background:#ece9f6;color:#655b74;padding:13px 17px;border-radius:11px;font-size:13px}.status{margin-top:20px;padding:19px 22px;display:flex;align-items:center;gap:13px}.wave{width:44px;height:44px;border-radius:12px;background:#eeeaf9;color:var(--violet);display:grid;place-items:center;font-size:22px}.status strong{display:block}.status small{color:var(--muted)}footer{display:flex;justify-content:space-between;color:#817b8a;font-size:12px;padding:20px 2px}.hidden{display:none}@media(max-width:760px){.badge{font-size:11px}main{padding:27px 15px}.grid{grid-template-columns:1fr}h1{font-size:32px}.lead{font-size:14px}textarea{min-height:240px}.actions{align-items:flex-start;flex-direction:column}.buttons{width:100%}.buttons button{flex:1}.status{flex-wrap:wrap}footer{gap:20px}}
+  </style>
+</head>
+<body>
+  <header><div class="logo">◉ голос<i>.</i></div><div class="badge">● Бесплатная озвучка</div></header>
+  <main>
+    <div class="eyebrow">РАБОТАЕТ НА ВАШЕМ УСТРОЙСТВЕ</div>
+    <h1>Дайте тексту голос<i>.</i></h1>
+    <p class="lead">Без регистрации, ключей и оплаты.</p>
+    <div class="grid">
+      <section class="card">
+        <div class="head"><h2><span class="step">01</span>Ваш текст</h2><button class="clear" id="clear" aria-label="Очистить">Очистить</button></div>
+        <textarea id="text" maxlength="10000" placeholder="Вставьте сюда текст — и нажмите «Читать»."></textarea>
+        <div class="meta"><button class="example" id="example">Попробовать на примере ↗</button><span id="counter">0 / 10 000</span></div>
+        <div class="actions"><small id="duration">Текст останется на вашем устройстве</small><div class="buttons"><button class="secondary hidden" id="pause">Пауза</button><button class="secondary hidden" id="stop">Стоп</button><button class="primary" id="play">▶ Читать</button></div></div>
+      </section>
+      <aside class="card settings">
+        <h2><span class="step">02</span>Настройте звучание</h2>
+        <div class="field">Голос</div><select id="voice" aria-label="Голос"><option>Системный голос</option></select>
+        <div class="field">Скорость <span class="value" id="speedValue">1×</span></div><input id="speed" type="range" min="0.5" max="2" step="0.05" value="1"><div class="range-labels"><span>Медленнее</span><span>Быстрее</span></div>
+        <div class="field">Манера чтения</div><select id="style"><option value="natural">Естественно</option><option value="calm">Спокойно</option><option value="energetic">Энергично</option><option value="story">Как рассказ</option><option value="business">По-деловому</option><option value="quiet">Тихо</option></select>
+        <div class="notice">Голоса зависят от модели телефона и установленных языков.</div>
+      </aside>
+    </div>
+    <section class="card status"><div class="wave">♫</div><div><strong id="state">Готов к чтению</strong><small id="stateHint">Текст никуда не отправляется.</small></div></section>
+    <footer><span>Создано, чтобы слушать</span><span>Работает без VPN-сервисов</span></footer>
+  </main>
+  <script>
+    const $=id=>document.getElementById(id), synth=window.speechSynthesis;
+    const text=$('text'), voice=$('voice'), speed=$('speed'), style=$('style');
+    let voices=[], paused=false;
+    const styles={natural:[1,1,1],calm:[.88,.9,1],energetic:[1.12,1.12,1],story:[.92,1.04,1],business:[1.03,.92,1],quiet:[.82,1.08,.55]};
+    function loadVoices(){const all=synth?synth.getVoices():[];voices=all.filter(v=>v.lang.toLowerCase().startsWith('ru'));if(!voices.length)voices=all;voice.innerHTML=voices.length?voices.map((v,i)=>`<option value="${i}">${v.name} · ${v.lang}</option>`).join(''):'<option>Системный голос</option>';voice.value=localStorage.golosVoice||'0'}
+    function update(){const n=text.value.length;$('counter').textContent=n.toLocaleString('ru')+' / 10 000';const words=text.value.trim()?text.value.trim().split(/\s+/).length:0;$('duration').textContent=words?'≈ '+Math.max(1,Math.ceil(words/150/Number(speed.value)*60))+' сек. звучания':'Текст останется на вашем устройстве';$('speedValue').textContent=Number(speed.value).toFixed(2).replace(/0+$/,'').replace(/\.$/,'')+'×';localStorage.golosText=text.value;localStorage.golosSpeed=speed.value;localStorage.golosStyle=style.value;localStorage.golosVoice=voice.value}
+    function setState(title,hint){$('state').textContent=title;$('stateHint').textContent=hint}
+    function speak(){if(!synth){setState('Озвучка не поддерживается','Откройте страницу в Chrome, Edge или Telegram на телефоне.');return}if(!text.value.trim())return;synth.cancel();const u=new SpeechSynthesisUtterance(text.value.trim()),cfg=styles[style.value];u.voice=voices[Number(voice.value)]||null;u.lang=u.voice?.lang||'ru-RU';u.rate=Math.min(2,Math.max(.5,Number(speed.value)*cfg[0]));u.pitch=cfg[1];u.volume=cfg[2];u.onstart=()=>{paused=false;$('pause').classList.remove('hidden');$('stop').classList.remove('hidden');setState('Сейчас читаю','Можно поставить чтение на паузу.')};u.onend=stop;u.onerror=()=>{stop();setState('Не удалось включить голос','Попробуйте выбрать другой голос.')};synth.speak(u)}
+    function stop(){synth?.cancel();paused=false;$('pause').textContent='Пауза';$('pause').classList.add('hidden');$('stop').classList.add('hidden');setState('Готов к чтению','Текст никуда не отправляется.')}
+    $('play').onclick=speak;$('stop').onclick=stop;$('pause').onclick=()=>{if(paused){synth.resume();paused=false;$('pause').textContent='Пауза';setState('Сейчас читаю','Можно поставить чтение на паузу.')}else{synth.pause();paused=true;$('pause').textContent='Продолжить';setState('Чтение на паузе','Нажмите «Продолжить».')}};
+    $('clear').onclick=()=>{stop();text.value='';update()};$('example').onclick=()=>{text.value='Иногда достаточно замедлиться, выйти на улицу и услышать, как ветер шевелит листья. У каждого дня есть свой голос. Нужно только прислушаться.';update()};
+    [text,speed,style,voice].forEach(el=>el.addEventListener('input',update));text.value=localStorage.golosText||'';speed.value=localStorage.golosSpeed||'1';style.value=localStorage.golosStyle||'natural';loadVoices();if(synth)synth.onvoiceschanged=loadVoices;update();window.Telegram?.WebApp?.ready();window.Telegram?.WebApp?.expand();
+  </script>
+</body>
+</html>
