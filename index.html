@@ -573,46 +573,44 @@
     .speed-head .section-title { margin-bottom: 5px; }
     .settings-card { margin-top: 14px; }
     .settings-card .voices {
-      gap: 8px; overflow: visible; border: 0; border-radius: 0; background: transparent;
+      position: relative; isolation: isolate; gap: 8px; overflow: visible;
+      border: 0; border-radius: 0; background: transparent;
     }
     .settings-card .voice {
-      position: relative; min-height: 58px; overflow: hidden; padding: 10px 11px;
-      border: 1px solid #343438; border-radius: 18px; background: #242426;
+      position: relative; z-index: 1; min-height: 58px; overflow: hidden; padding: 10px 11px;
+      border: 1px solid #343438; border-radius: 18px; background: #202022;
       box-shadow: inset 0 1px rgba(255,255,255,.045);
-      transition: border-color .24s ease, background .24s ease, box-shadow .24s ease, transform .22s cubic-bezier(.2,.9,.25,1.25);
+      transition: color .22s ease, border-color .22s ease, background .22s ease, transform .22s cubic-bezier(.2,.9,.25,1.25);
     }
     .settings-card .voice:nth-child(n) { border: 1px solid #343438; }
     .settings-card .voice.active {
-      border-color: rgba(10,132,255,.78);
-      background: linear-gradient(145deg, rgba(10,132,255,.22), rgba(94,92,230,.12));
-      box-shadow: inset 0 1px rgba(255,255,255,.10), 0 5px 18px rgba(10,132,255,.12);
+      border-color: transparent; background: transparent; box-shadow: none;
     }
     .settings-card .voice-icon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 12px; }
+    .settings-card .voice.active .voice-icon {
+      border-color: #5b5b60; background: #48484a; color: #fff;
+      box-shadow: inset 0 1px rgba(255,255,255,.16), 0 2px 6px rgba(0,0,0,.24);
+      transform: scale(1.06);
+    }
+    .settings-card .voice.active .voice-name { color: #fff; }
     .settings-card .voice > * { position: relative; z-index: 2; }
-    .settings-card .voice::before {
-      position: absolute; width: 110px; height: 110px; left: -27px; top: 50%; z-index: 1;
-      border-radius: 50%; background: radial-gradient(circle, rgba(10,132,255,.34), rgba(94,92,230,.12) 52%, transparent 72%);
-      content: ""; opacity: 0; pointer-events: none; transform: translateY(-50%) scale(.12);
+    .voice-selection {
+      --voice-scale-x: 1; --voice-scale-y: 1;
+      position: absolute; left: 0; top: 0; z-index: 0; opacity: 0;
+      border: 1px solid #5b5b60; border-radius: 18px; background: #303033;
+      box-shadow: 0 4px 12px rgba(0,0,0,.26), inset 0 1px rgba(255,255,255,.16), inset 0 -1px rgba(255,255,255,.035);
+      transform: scaleX(var(--voice-scale-x)) scaleY(var(--voice-scale-y));
+      transform-origin: center; pointer-events: none; will-change: left, top, width, height, transform;
+      transition: left .34s cubic-bezier(.34,1.12,.64,1), top .34s cubic-bezier(.34,1.12,.64,1), width .28s ease, height .28s ease, transform .46s cubic-bezier(.16,1.38,.34,1), opacity .16s ease;
     }
-    .settings-card .voice.voice-picked { animation: voice-card-pick .46s cubic-bezier(.2,.9,.25,1.25); }
-    .settings-card .voice.voice-picked::before { animation: voice-ripple .55s ease-out; }
-    .settings-card .voice.voice-picked .voice-icon { animation: voice-icon-pick .5s cubic-bezier(.2,.9,.25,1.35); }
-
-    @keyframes voice-card-pick {
-      0% { transform: scale(.97); }
-      58% { transform: scale(1.025); }
-      100% { transform: scale(1); }
-    }
-    @keyframes voice-ripple {
-      0% { opacity: 0; transform: translateY(-50%) scale(.12); }
-      28% { opacity: 1; }
-      100% { opacity: 0; transform: translateY(-50%) scale(1.35); }
-    }
+    .voice-selection.ready { opacity: 1; }
+    .voice-selection.no-transition { transition: none; }
     @keyframes voice-icon-pick {
-      0% { transform: scale(.78) rotate(-8deg); }
-      60% { transform: scale(1.12) rotate(3deg); }
-      100% { transform: scale(1) rotate(0); }
+      0% { transform: scale(.86); }
+      62% { transform: scale(1.14); }
+      100% { transform: scale(1.06); }
     }
+    .settings-card .voice.voice-picked .voice-icon { animation: voice-icon-pick .42s cubic-bezier(.2,.9,.25,1.35); }
 
     .segments { position: relative; isolation: isolate; overflow: hidden; touch-action: none; }
     .segments-indicator {
@@ -627,8 +625,8 @@
     .segments-indicator.dragging { transition: none; }
     .segments button { position: relative; z-index: 1; border: 0 !important; background: transparent !important; box-shadow: none !important; }
 
-    .primary, .voice.active, .settings-card, .segments, .preview { position: relative; isolation: isolate; }
-    .primary::after, .voice.active::after, .settings-card::after, .preview::after {
+    .primary, .settings-card, .segments, .preview { position: relative; isolation: isolate; }
+    .primary::after, .settings-card::after, .preview::after {
       position: absolute; inset: 0; z-index: 3; border-radius: inherit; padding: 1px;
       background: conic-gradient(from 225deg, rgba(255,255,255,.025), rgba(255,255,255,.05) 22%, rgba(255,255,255,.28) 42%, rgba(255,255,255,.11) 57%, rgba(0,0,0,.20) 76%, rgba(255,255,255,.025));
       content: ""; pointer-events: none;
@@ -1157,8 +1155,41 @@
       aiStatus.style.color = connected ? '#27835a' : '';
     }
 
+    function positionVoiceIndicator(button, animate = true) {
+      const indicator = $('voiceIndicator');
+      if (!indicator || !button || !voicesBox.offsetWidth) return;
+      const oldLeft = Number.parseFloat(indicator.style.left) || button.offsetLeft;
+      const oldTop = Number.parseFloat(indicator.style.top) || button.offsetTop;
+      const dx = button.offsetLeft - oldLeft;
+      const dy = button.offsetTop - oldTop;
+      if (!animate) indicator.classList.add('no-transition');
+      else {
+        indicator.style.setProperty('--voice-scale-x', Math.abs(dx) >= Math.abs(dy) ? '1.08' : '.96');
+        indicator.style.setProperty('--voice-scale-y', Math.abs(dy) > Math.abs(dx) ? '1.08' : '.96');
+      }
+      indicator.style.left = `${button.offsetLeft}px`;
+      indicator.style.top = `${button.offsetTop}px`;
+      indicator.style.width = `${button.offsetWidth}px`;
+      indicator.style.height = `${button.offsetHeight}px`;
+      indicator.classList.add('ready');
+      if (!animate) {
+        void indicator.offsetWidth;
+        indicator.classList.remove('no-transition');
+      } else {
+        window.setTimeout(() => {
+          indicator.style.setProperty('--voice-scale-x', '1');
+          indicator.style.setProperty('--voice-scale-y', '1');
+        }, 90);
+      }
+    }
+
     function renderVoices() {
       voicesBox.innerHTML = '';
+      const indicator = document.createElement('span');
+      indicator.className = 'voice-selection';
+      indicator.id = 'voiceIndicator';
+      indicator.setAttribute('aria-hidden', 'true');
+      voicesBox.appendChild(indicator);
       profiles.forEach((profile, index) => {
         const voice = aiVoices[index % Math.max(aiVoices.length, 1)];
         const button = document.createElement('button');
@@ -1176,12 +1207,14 @@
             item.classList.toggle('active', item === button);
             item.classList.remove('voice-picked');
           });
+          positionVoiceIndicator(button);
           void button.offsetWidth;
           button.classList.add('voice-picked');
         });
         voicesBox.appendChild(button);
       });
       initLiquidTouch(voicesBox);
+      requestAnimationFrame(() => positionVoiceIndicator(voicesBox.querySelector('.voice.active'), false));
     }
 
     function currentVoice() {
@@ -1426,9 +1459,15 @@
     initLiquidTouch();
     initStyleSlider();
     document.querySelector('.settings-card').addEventListener('toggle', event => {
-      if (event.currentTarget.open) requestAnimationFrame(() => positionStyleIndicator(document.querySelector('[data-style].active'), false));
+      if (event.currentTarget.open) requestAnimationFrame(() => {
+        positionStyleIndicator(document.querySelector('[data-style].active'), false);
+        positionVoiceIndicator(voicesBox.querySelector('.voice.active'), false);
+      });
     });
-    window.addEventListener('resize', () => positionStyleIndicator(document.querySelector('[data-style].active'), false));
+    window.addEventListener('resize', () => {
+      positionStyleIndicator(document.querySelector('[data-style].active'), false);
+      positionVoiceIndicator(voicesBox.querySelector('.voice.active'), false);
+    });
     updateCount();
     setConnected(false);
 
