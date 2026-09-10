@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ru">
+<html lang="ru" data-design="liquid">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
@@ -530,8 +530,103 @@
       .voice-name { font-size: 15px; }
     }
   </style>
+  <style id="liquid-controls">
+    .liquid-filter-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
+    .app { max-width: 620px; }
+    header { min-height: 104px; }
+    textarea { min-height: 142px; }
+    .section { margin-top: 22px; }
+    .voice { min-height: 64px; }
+    .voice-icon { width: 40px; height: 40px; flex-basis: 40px; }
+    .hint { display: none; }
+
+    .settings-card {
+      margin-top: 18px; border: 1px solid #303035; border-radius: 22px;
+      background: #1c1c1e; box-shadow: 0 2px 7px rgba(0,0,0,.38);
+    }
+    .settings-card summary {
+      position: relative; display: flex; min-height: 54px; align-items: center;
+      justify-content: space-between; gap: 12px; padding: 0 16px;
+      border-radius: inherit; color: #f5f5f7; font-size: 15px; font-weight: 650;
+      cursor: pointer; list-style: none; overflow: hidden;
+    }
+    .settings-card summary::-webkit-details-marker { display: none; }
+    .settings-card summary::before {
+      width: 7px; height: 7px; flex: 0 0 7px; margin-right: 1px;
+      border-right: 2px solid #8e8e93; border-bottom: 2px solid #8e8e93;
+      transform: rotate(45deg) translateY(-2px); transition: transform .25s cubic-bezier(.2,.8,.3,1);
+      content: "";
+    }
+    .settings-card[open] summary::before { transform: rotate(225deg) translate(-2px,-1px); }
+    .settings-card summary > span:first-of-type { flex: 1; }
+    .settings-summary { color: #98989d; font-size: 12px; font-weight: 500; }
+    .settings-card .row { margin: 0; padding: 4px 14px 16px; border-top: 1px solid #38383a; }
+
+    .segments { position: relative; isolation: isolate; overflow: hidden; touch-action: none; }
+    .segments-indicator {
+      --liquid-scale-x: 1; --liquid-scale-y: 1; --liquid-shift-x: 0px;
+      position: absolute; top: 3px; bottom: 3px; left: 3px; z-index: 0;
+      border: 1px solid #5b5b60; border-radius: 17px; background: #3a3a3c;
+      box-shadow: 0 1px 3px rgba(0,0,0,.32), inset 0 1px rgba(255,255,255,.16);
+      transform: translate3d(var(--liquid-shift-x),0,0) scaleX(var(--liquid-scale-x)) scaleY(var(--liquid-scale-y));
+      transform-origin: center; transition: left .28s cubic-bezier(.34,1.2,.64,1), width .28s cubic-bezier(.34,1.2,.64,1), transform .48s cubic-bezier(.16,1.42,.36,1);
+      pointer-events: none; will-change: left, width, transform;
+    }
+    .segments-indicator.dragging { transition: none; }
+    .segments button { position: relative; z-index: 1; border: 0 !important; background: transparent !important; box-shadow: none !important; }
+
+    .primary, .voice.active, .settings-card, .segments, .preview { position: relative; isolation: isolate; }
+    .primary::after, .voice.active::after, .settings-card::after, .preview::after {
+      position: absolute; inset: 0; z-index: 3; border-radius: inherit; padding: 1px;
+      background: conic-gradient(from 225deg, rgba(255,255,255,.025), rgba(255,255,255,.05) 22%, rgba(255,255,255,.28) 42%, rgba(255,255,255,.11) 57%, rgba(0,0,0,.20) 76%, rgba(255,255,255,.025));
+      content: ""; pointer-events: none;
+      -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+      -webkit-mask-composite: xor; mask-composite: exclude;
+    }
+    .preview { width: fit-content; min-height: 40px; margin: 10px auto 0; padding: 0 16px; border-radius: 20px; background: #1c1c1e; }
+    .primary {
+      -webkit-backdrop-filter: url(#liquidRefraction) blur(18px) saturate(170%) brightness(1.08);
+      backdrop-filter: url(#liquidRefraction) blur(18px) saturate(170%) brightness(1.08);
+    }
+    .liquid-jelly {
+      --liquid-button-x: 0px; --liquid-button-y: 0px;
+      --liquid-button-sx: 1; --liquid-button-sy: 1;
+      transform: translate3d(var(--liquid-button-x),var(--liquid-button-y),0) scaleX(var(--liquid-button-sx)) scaleY(var(--liquid-button-sy));
+      transform-origin: center; will-change: transform;
+      transition: transform .42s cubic-bezier(.16,1.38,.34,1), filter .2s ease;
+    }
+    .liquid-jelly.liquid-pressed { transition: none; filter: brightness(1.12); }
+
+    .speed-range { height: 28px; margin: 1px 0 3px; appearance: none; -webkit-appearance: none; background: transparent; }
+    .speed-range::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: #38383a; }
+    .speed-range::-webkit-slider-thumb {
+      width: 18px; height: 18px; margin-top: -7px; appearance: none; -webkit-appearance: none;
+      border: 1px solid rgba(255,255,255,.45); border-radius: 50%; background: #0a84ff;
+      box-shadow: 0 2px 7px rgba(0,0,0,.34);
+    }
+    .speed-range::-moz-range-track { height: 4px; border: 0; border-radius: 99px; background: #38383a; }
+    .speed-range::-moz-range-progress { height: 4px; border-radius: 99px; background: #0a84ff; }
+    .speed-range::-moz-range-thumb { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; background: #0a84ff; }
+
+    @media (max-width: 510px) {
+      header { min-height: 105px; }
+      textarea { min-height: 128px; }
+      .section { margin-top: 19px; }
+      .settings-card .row { gap: 14px; }
+      .actions { margin-top: 16px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .liquid-jelly, .segments-indicator { transition: none !important; }
+    }
+  </style>
 </head>
 <body>
+  <svg class="liquid-filter-defs" aria-hidden="true">
+    <filter id="liquidRefraction" x="-12%" y="-12%" width="124%" height="124%">
+      <feTurbulence type="fractalNoise" baseFrequency="0.012" numOctaves="1" seed="7" result="liquidNoise"/>
+      <feDisplacementMap in="SourceGraphic" in2="liquidNoise" scale="4" xChannelSelector="R" yChannelSelector="G"/>
+    </filter>
+  </svg>
   <div class="bg-mesh" aria-hidden="true">
     <div class="bg-blob one"></div><div class="bg-blob two"></div><div class="bg-blob three"></div>
   </div>
@@ -553,32 +648,39 @@
       <div class="section">
         <h2 class="section-title">Выберите голос</h2>
         <div class="voices" id="voices"></div>
-        <button class="preview" id="preview" type="button">▶ Послушать голос</button>
+        <button class="preview liquid-jelly" id="preview" type="button">▶ Послушать голос</button>
       </div>
 
-      <div class="row">
-        <div>
-          <h2 class="section-title">Манера чтения</h2>
-          <div class="segments" id="styles">
-            <button type="button" data-style="calm">Спокойно</button>
-            <button type="button" data-style="natural" class="active">Естественно</button>
-            <button type="button" data-style="expressive">Ярко</button>
+      <details class="settings-card">
+        <summary>
+          <span>Настройки чтения</span>
+          <span class="settings-summary" id="settingsSummary">Обычно · 1×</span>
+        </summary>
+        <div class="row">
+          <div>
+            <h2 class="section-title">Манера</h2>
+            <div class="segments segmented-slider" id="styles">
+              <div class="segments-indicator segmented-indicator" id="styleIndicator"></div>
+              <button type="button" data-style="calm">Спокойно</button>
+              <button type="button" data-style="natural" class="active">Обычно</button>
+              <button type="button" data-style="expressive">Ярко</button>
+            </div>
+          </div>
+          <div>
+            <div class="speed-head">
+              <h2 class="section-title">Скорость</h2>
+              <output class="speed-value" id="speedValue" for="speed">1×</output>
+            </div>
+            <input class="speed-range" id="speed" type="range" min="0.5" max="4" step="0.1" value="1" aria-label="Скорость чтения">
+            <div class="speed-scale"><span>0.5×</span><span>1×</span><span>4×</span></div>
           </div>
         </div>
-        <div>
-          <div class="speed-head">
-            <h2 class="section-title">Скорость</h2>
-            <output class="speed-value" id="speedValue" for="speed">1×</output>
-          </div>
-          <input class="speed-range" id="speed" type="range" min="0.5" max="4" step="0.1" value="1" aria-label="Скорость чтения">
-          <div class="speed-scale"><span>0.5×</span><span>1×</span><span>4×</span></div>
-        </div>
-      </div>
+      </details>
 
       <div class="actions">
-        <button class="primary" id="read" type="button">▶ Читать</button>
-        <button class="secondary" id="pause" type="button" aria-label="Пауза">Ⅱ</button>
-        <button class="stop" id="stop" type="button" aria-label="Остановить">■</button>
+        <button class="primary liquid-jelly" id="read" type="button">▶ Читать</button>
+        <button class="secondary liquid-jelly" id="pause" type="button" aria-label="Пауза">Ⅱ</button>
+        <button class="stop liquid-jelly" id="stop" type="button" aria-label="Остановить">■</button>
       </div>
       <div class="status" id="status">Готово к чтению</div>
     </section>
@@ -815,6 +917,8 @@
     if (window.Telegram?.WebApp) {
       Telegram.WebApp.ready();
       Telegram.WebApp.expand();
+      Telegram.WebApp.setHeaderColor?.('#101112');
+      Telegram.WebApp.setBackgroundColor?.('#101112');
     }
   </script>
   <script>
@@ -862,6 +966,102 @@
     textInput.value = localStorage.getItem('golos-text') || '';
     if (!profiles.some(profile => profile.id === selectedProfile)) selectedProfile = 'soft';
 
+    const styleNames = { calm: 'Спокойно', natural: 'Обычно', expressive: 'Ярко' };
+
+    function updateSettingsSummary() {
+      const speedText = `${selectedSpeed.toFixed(1).replace('.0', '')}×`;
+      $('settingsSummary').textContent = `${styleNames[selectedStyle] || 'Обычно'} · ${speedText}`;
+    }
+
+    function initLiquidTouch(root = document) {
+      if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return;
+      root.querySelectorAll('.liquid-jelly').forEach(element => {
+        if (element.dataset.liquidReady) return;
+        element.dataset.liquidReady = '1';
+        element.addEventListener('pointerdown', event => {
+          if (event.button !== undefined && event.button !== 0) return;
+          const startX = event.clientX;
+          const startY = event.clientY;
+          element.classList.add('liquid-pressed');
+          element.style.setProperty('--liquid-button-sx', '.95');
+          element.style.setProperty('--liquid-button-sy', '.95');
+          const move = moveEvent => {
+            const dx = Math.max(-18, Math.min(18, moveEvent.clientX - startX));
+            const dy = Math.max(-18, Math.min(18, moveEvent.clientY - startY));
+            const stretch = Math.min(.09, (Math.abs(dx) + Math.abs(dy)) / 180);
+            element.style.setProperty('--liquid-button-x', `${dx * .05}px`);
+            element.style.setProperty('--liquid-button-y', `${dy * .05}px`);
+            element.style.setProperty('--liquid-button-sx', String(1.01 + stretch));
+            element.style.setProperty('--liquid-button-sy', String(.99 - stretch * .45));
+          };
+          const settle = () => {
+            element.classList.remove('liquid-pressed');
+            element.style.setProperty('--liquid-button-x', '0px');
+            element.style.setProperty('--liquid-button-y', '0px');
+            element.style.setProperty('--liquid-button-sx', '1');
+            element.style.setProperty('--liquid-button-sy', '1');
+            window.removeEventListener('pointermove', move);
+          };
+          window.addEventListener('pointermove', move, { passive: true });
+          window.addEventListener('pointerup', settle, { once: true });
+          window.addEventListener('pointercancel', settle, { once: true });
+        });
+      });
+    }
+
+    function positionStyleIndicator(button, animate = true) {
+      const indicator = $('styleIndicator');
+      if (!button || !indicator || !button.offsetWidth) return;
+      if (!animate) indicator.classList.add('dragging');
+      indicator.style.left = `${button.offsetLeft}px`;
+      indicator.style.width = `${button.offsetWidth}px`;
+      if (!animate) requestAnimationFrame(() => indicator.classList.remove('dragging'));
+    }
+
+    function initStyleSlider() {
+      const slider = $('styles');
+      const indicator = $('styleIndicator');
+      let pointerId = null;
+      let dragged = false;
+      const buttons = () => [...slider.querySelectorAll('button[data-style]')];
+      const nearest = clientX => {
+        const rect = slider.getBoundingClientRect();
+        return buttons().reduce((best, button) => {
+          const center = button.offsetLeft + button.offsetWidth / 2;
+          const bestCenter = best.offsetLeft + best.offsetWidth / 2;
+          const localX = clientX - rect.left;
+          return Math.abs(center - localX) < Math.abs(bestCenter - localX) ? button : best;
+        }, buttons()[0]);
+      };
+      slider.addEventListener('pointerdown', event => {
+        pointerId = event.pointerId;
+        dragged = false;
+      });
+      slider.addEventListener('pointermove', event => {
+        if (event.pointerId !== pointerId) return;
+        dragged = true;
+        const target = nearest(event.clientX);
+        indicator.classList.add('dragging');
+        indicator.style.left = `${target.offsetLeft}px`;
+        indicator.style.width = `${target.offsetWidth}px`;
+        const direction = event.movementX || 0;
+        indicator.style.setProperty('--liquid-scale-x', '1.08');
+        indicator.style.setProperty('--liquid-scale-y', '.95');
+        indicator.style.setProperty('--liquid-shift-x', `${Math.max(-2, Math.min(2, direction * .2))}px`);
+      });
+      slider.addEventListener('pointerup', event => {
+        if (event.pointerId !== pointerId) return;
+        pointerId = null;
+        if (!dragged) return;
+        const target = nearest(event.clientX);
+        indicator.classList.remove('dragging');
+        indicator.style.setProperty('--liquid-scale-x', '1');
+        indicator.style.setProperty('--liquid-scale-y', '1');
+        indicator.style.setProperty('--liquid-shift-x', '0px');
+        target.click();
+      });
+    }
+
     function setConnected(connected) {
       aiStatus.textContent = connected ? '✓ Готово' : 'Голоса';
       aiStatus.style.color = connected ? '#27835a' : '';
@@ -873,16 +1073,18 @@
         const voice = aiVoices[index % Math.max(aiVoices.length, 1)];
         const button = document.createElement('button');
         button.type = 'button';
-        button.className = 'voice' + (selectedProfile === profile.id ? ' active' : '');
+        button.className = 'voice liquid-jelly' + (selectedProfile === profile.id ? ' active' : '');
         button.dataset.profile = profile.id;
         button.innerHTML = `<span class="voice-icon">${profile.icon}</span><span class="voice-copy"><span class="voice-name">${voice ? voice.name : profile.name}</span><span class="voice-system">${voice ? 'Нажмите, чтобы выбрать' : 'Загрузка…'}</span></span>`;
         button.addEventListener('click', () => {
           selectedProfile = profile.id;
           localStorage.setItem('golos-profile', selectedProfile);
+          window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
           renderVoices();
         });
         voicesBox.appendChild(button);
       });
+      initLiquidTouch(voicesBox);
     }
 
     function currentVoice() {
@@ -1018,6 +1220,9 @@
       selectedStyle = button.dataset.style;
       localStorage.setItem('golos-style', selectedStyle);
       document.querySelectorAll('[data-style]').forEach(item => item.classList.toggle('active', item === button));
+      positionStyleIndicator(button);
+      updateSettingsSummary();
+      window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
     });
 
     function applySpeed(value) {
@@ -1025,6 +1230,7 @@
       $('speed').value = String(selectedSpeed);
       $('speedValue').textContent = `${selectedSpeed.toFixed(1).replace('.0', '')}×`;
       localStorage.setItem('golos-speed', String(selectedSpeed));
+      updateSettingsSummary();
       if (audio) {
         audio.playbackRate = selectedSpeed;
         audio.preservesPitch = true;
@@ -1057,12 +1263,20 @@
     document.querySelectorAll('[data-style]').forEach(item => item.classList.toggle('active', item.dataset.style === selectedStyle));
     applySpeed(selectedSpeed);
     renderVoices();
+    initLiquidTouch();
+    initStyleSlider();
+    document.querySelector('.settings-card').addEventListener('toggle', event => {
+      if (event.currentTarget.open) requestAnimationFrame(() => positionStyleIndicator(document.querySelector('[data-style].active'), false));
+    });
+    window.addEventListener('resize', () => positionStyleIndicator(document.querySelector('[data-style].active'), false));
     updateCount();
     setConnected(false);
 
     if (window.Telegram?.WebApp) {
       Telegram.WebApp.ready();
       Telegram.WebApp.expand();
+      Telegram.WebApp.setHeaderColor?.('#101112');
+      Telegram.WebApp.setBackgroundColor?.('#101112');
     }
 
     loadVoices().catch(error => {
