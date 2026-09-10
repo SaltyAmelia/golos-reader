@@ -47,6 +47,17 @@ async function validateTelegram(initData, botToken) {
   return calculatedHash.length === receivedHash.length && calculatedHash === receivedHash.toLowerCase();
 }
 
+function telegramChatId(initData) {
+  const params = new URLSearchParams(initData || '');
+  for (const key of ['chat', 'user']) {
+    try {
+      const value = JSON.parse(params.get(key) || '{}');
+      if (Number.isSafeInteger(Number(value.id))) return String(value.id);
+    } catch (_) {}
+  }
+  return '';
+}
+
 async function eleven(path, env, options = {}) {
   return fetch('https://api.elevenlabs.io' + path, {
     ...options,
@@ -102,6 +113,34 @@ export default {
         status: 200,
         headers: { ...corsHeaders(env), 'Content-Type': 'audio/mpeg', 'Cache-Control': 'no-store' }
       });
+    }
+
+    if (request.method === 'POST' && url.pathname === '/send-voice') {
+      const chatId = telegramChatId(request.headers.get('X-Telegram-Init-Data'));
+      if (!chatId) return json({ error: 'Не удалось определить чат' }, 400, env);
+
+      let form;
+      try { form = await request.formData(); } catch (_) { return json({ error: 'Не удалось прочитать запись' }, 400, env); }
+      const voice = form.get('voice');
+      if (!voice || typeof voice.arrayBuffer !== 'function' || !voice.size || voice.size > 50 * 1024 * 1024) {
+        return json({ error: 'Запись отсутствует или слишком большая' }, 400, env);
+      }
+
+      const telegramForm = new FormData();
+      telegramForm.set('chat_id', chatId);
+      telegramForm.set('voice', voice, 'golos.mp3');
+      const duration = Math.max(0, Math.min(86400, Math.round(Number(form.get('duration')) || 0)));
+      if (duration) telegramForm.set('duration', String(duration));
+
+      const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendVoice`, {
+        method: 'POST',
+        body: telegramForm
+      });
+      const telegramData = await telegramResponse.json().catch(() => ({}));
+      if (!telegramResponse.ok || !telegramData.ok) {
+        return json({ error: telegramData.description || 'Telegram не принял голосовое сообщение' }, 502, env);
+      }
+      return json({ ok: true, message_id: telegramData.result?.message_id }, 200, env);
     }
 
     return json({ error: 'Not found' }, 404, env);
