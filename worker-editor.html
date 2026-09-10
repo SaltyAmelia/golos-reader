@@ -1,0 +1,149 @@
+<!doctype html><meta charset="utf-8"><pre id="source">const encoder = new TextEncoder();
+
+function corsHeaders(env) {
+  return {
+    &#39;Access-Control-Allow-Origin&#39;: env.ALLOWED_ORIGIN,
+    &#39;Access-Control-Allow-Headers&#39;: &#39;Content-Type, X-Telegram-Init-Data&#39;,
+    &#39;Access-Control-Allow-Methods&#39;: &#39;GET, POST, OPTIONS&#39;,
+    &#39;Vary&#39;: &#39;Origin&#39;
+  };
+}
+
+function json(data, status, env) {
+  return new Response(JSON.stringify(data), {
+    status,
+    headers: { ...corsHeaders(env), &#39;Content-Type&#39;: &#39;application/json; charset=utf-8&#39; }
+  });
+}
+
+async function hmac(key, value) {
+  const cryptoKey = await crypto.subtle.importKey(
+    &#39;raw&#39;,
+    typeof key === &#39;string&#39; ? encoder.encode(key) : key,
+    { name: &#39;HMAC&#39;, hash: &#39;SHA-256&#39; },
+    false,
+    [&#39;sign&#39;]
+  );
+  return crypto.subtle.sign(&#39;HMAC&#39;, cryptoKey, encoder.encode(value));
+}
+
+function toHex(buffer) {
+  return [...new Uint8Array(buffer)].map(byte =&gt; byte.toString(16).padStart(2, &#39;0&#39;)).join(&#39;&#39;);
+}
+
+async function validateTelegram(initData, botToken) {
+  if (!initData || !botToken) return false;
+  const params = new URLSearchParams(initData);
+  const receivedHash = params.get(&#39;hash&#39;);
+  const authDate = Number(params.get(&#39;auth_date&#39;));
+  if (!receivedHash || !authDate || Math.abs(Date.now() / 1000 - authDate) &gt; 3600) return false;
+  params.delete(&#39;hash&#39;);
+  const checkString = [...params.entries()]
+    .sort(([a], [b]) =&gt; a.localeCompare(b))
+    .map(([key, value]) =&gt; key + &#39;=&#39; + value)
+    .join(&#39;\n&#39;);
+  const secretKey = await hmac(&#39;WebAppData&#39;, botToken);
+  const calculatedHash = toHex(await hmac(secretKey, checkString));
+  return calculatedHash.length === receivedHash.length &amp;&amp; calculatedHash === receivedHash.toLowerCase();
+}
+
+function telegramChatId(initData) {
+  const params = new URLSearchParams(initData || &#39;&#39;);
+  for (const key of [&#39;chat&#39;, &#39;user&#39;]) {
+    try {
+      const value = JSON.parse(params.get(key) || &#39;{}&#39;);
+      if (Number.isSafeInteger(Number(value.id))) return String(value.id);
+    } catch (_) {}
+  }
+  return &#39;&#39;;
+}
+
+async function eleven(path, env, options = {}) {
+  return fetch(&#39;https://api.elevenlabs.io&#39; + path, {
+    ...options,
+    headers: {
+      ...(options.headers || {}),
+      &#39;xi-api-key&#39;: env.ELEVENLABS_API_KEY
+    }
+  });
+}
+
+export default {
+  async fetch(request, env) {
+    const origin = request.headers.get(&#39;Origin&#39;);
+    if (origin &amp;&amp; origin !== env.ALLOWED_ORIGIN) return json({ error: &#39;Forbidden origin&#39; }, 403, env);
+    if (request.method === &#39;OPTIONS&#39;) return new Response(null, { status: 204, headers: corsHeaders(env) });
+
+    const authorized = await validateTelegram(request.headers.get(&#39;X-Telegram-Init-Data&#39;), env.TELEGRAM_BOT_TOKEN);
+    if (!authorized) return json({ error: &#39;Откройте приложение из Telegram&#39; }, 401, env);
+
+    const url = new URL(request.url);
+    if (request.method === &#39;GET&#39; &amp;&amp; url.pathname === &#39;/voices&#39;) {
+      const voices = [
+        { id: &#39;EXAVITQu4vr4xnSDxMaL&#39;, name: &#39;Мягкий&#39;, category: &#39;ai&#39; },
+        { id: &#39;pNInz6obpgDQGcFmaJgB&#39;, name: &#39;Глубокий&#39;, category: &#39;ai&#39; },
+        { id: &#39;ErXwobaYiN019PkySvjV&#39;, name: &#39;Спокойный&#39;, category: &#39;ai&#39; },
+        { id: &#39;JBFqnCBsd6RMkjVDRZzb&#39;, name: &#39;Диктор&#39;, category: &#39;ai&#39; }
+      ];
+      return json({ voices }, 200, env);
+    }
+
+    if (request.method === &#39;POST&#39; &amp;&amp; url.pathname === &#39;/tts&#39;) {
+      let body;
+      try { body = await request.json(); } catch (_) { return json({ error: &#39;Некорректный запрос&#39; }, 400, env); }
+      const text = String(body.text || &#39;&#39;).trim();
+      const voiceId = String(body.voice_id || &#39;&#39;);
+      if (!text || text.length &gt; 9000 || !/^[a-zA-Z0-9_-]{8,}$/.test(voiceId)) {
+        return json({ error: &#39;Проверьте текст и голос&#39; }, 400, env);
+      }
+      const response = await eleven(&#39;/v1/text-to-speech/&#39; + encodeURIComponent(voiceId) + &#39;?output_format=mp3_44100_128&#39;, env, {
+        method: &#39;POST&#39;,
+        headers: { &#39;Accept&#39;: &#39;audio/mpeg&#39;, &#39;Content-Type&#39;: &#39;application/json&#39; },
+        body: JSON.stringify({
+          text,
+          model_id: &#39;eleven_multilingual_v2&#39;,
+          voice_settings: body.voice_settings
+        })
+      });
+      if (!response.ok) {
+        const status = response.status === 429 ? 429 : 502;
+        return json({ error: response.status === 429 ? &#39;Закончился лимит озвучивания&#39; : &#39;Не удалось создать речь&#39; }, status, env);
+      }
+      return new Response(response.body, {
+        status: 200,
+        headers: { ...corsHeaders(env), &#39;Content-Type&#39;: &#39;audio/mpeg&#39;, &#39;Cache-Control&#39;: &#39;no-store&#39; }
+      });
+    }
+
+    if (request.method === &#39;POST&#39; &amp;&amp; url.pathname === &#39;/send-voice&#39;) {
+      const chatId = telegramChatId(request.headers.get(&#39;X-Telegram-Init-Data&#39;));
+      if (!chatId) return json({ error: &#39;Не удалось определить чат&#39; }, 400, env);
+
+      let form;
+      try { form = await request.formData(); } catch (_) { return json({ error: &#39;Не удалось прочитать запись&#39; }, 400, env); }
+      const voice = form.get(&#39;voice&#39;);
+      if (!voice || typeof voice.arrayBuffer !== &#39;function&#39; || !voice.size || voice.size &gt; 50 * 1024 * 1024) {
+        return json({ error: &#39;Запись отсутствует или слишком большая&#39; }, 400, env);
+      }
+
+      const telegramForm = new FormData();
+      telegramForm.set(&#39;chat_id&#39;, chatId);
+      telegramForm.set(&#39;voice&#39;, voice, &#39;golos.mp3&#39;);
+      const duration = Math.max(0, Math.min(86400, Math.round(Number(form.get(&#39;duration&#39;)) || 0)));
+      if (duration) telegramForm.set(&#39;duration&#39;, String(duration));
+
+      const telegramResponse = await fetch(`https://api.telegram.org/bot${env.TELEGRAM_BOT_TOKEN}/sendVoice`, {
+        method: &#39;POST&#39;,
+        body: telegramForm
+      });
+      const telegramData = await telegramResponse.json().catch(() =&gt; ({}));
+      if (!telegramResponse.ok || !telegramData.ok) {
+        return json({ error: telegramData.description || &#39;Telegram не принял голосовое сообщение&#39; }, 502, env);
+      }
+      return json({ ok: true, message_id: telegramData.result?.message_id }, 200, env);
+    }
+
+    return json({ error: &#39;Not found&#39; }, 404, env);
+  }
+};
+</pre>
