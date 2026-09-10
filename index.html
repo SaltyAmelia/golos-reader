@@ -670,7 +670,7 @@
     }
 
     .playback { display: none; margin-top: 14px; padding: 12px 14px 10px; border: 1px solid #303035; border-radius: 20px; background: #1c1c1e; }
-    .audio-ready .playback { display: block; }
+    .audio-ready .playback { display: block; animation: playback-enter .42s cubic-bezier(.2,.9,.25,1.15) both; }
     .seek-range {
       width: 100%; height: 22px; margin: 0; appearance: none; -webkit-appearance: none;
       background: transparent; cursor: pointer;
@@ -690,6 +690,53 @@
     .seek-range::-moz-range-thumb { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,.52); border-radius: 50%; background: #f5f5f7; }
     .playback-time { display: flex; justify-content: space-between; margin-top: 1px; color: #8e8e93; font-size: 10px; font-variant-numeric: tabular-nums; }
 
+    .send-chat {
+      display: flex; width: 100%; min-height: 44px; align-items: center; justify-content: center;
+      gap: 8px; margin-top: 10px; border: 1px solid #3a3a3c; border-radius: 22px;
+      background: #29292c; color: #f5f5f7; font: 650 14px inherit; cursor: pointer;
+      transition: background .2s ease, color .2s ease, opacity .2s ease;
+    }
+    .send-chat svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
+    .send-chat:active { background: #343438; }
+    .send-chat:disabled { cursor: wait; opacity: .72; }
+    .send-chat.sending svg { animation: send-flight .85s ease-in-out infinite; }
+    .send-chat.sent { color: #55c58a; }
+
+    textarea { transition: border-color .22s ease, background .22s ease, transform .24s cubic-bezier(.2,.8,.25,1); }
+    textarea:focus { transform: translateY(-1px); }
+    textarea.typing { animation: text-breathe .26s ease-out; }
+    .settings-card summary { transition: background .2s ease, color .2s ease; }
+    .settings-card summary:active { background: rgba(255,255,255,.045); }
+    .settings-card[open] .settings-body { transform-origin: top; animation: settings-enter .34s cubic-bezier(.2,.82,.25,1) both; }
+    .speed-value { transition: transform .2s cubic-bezier(.2,.9,.25,1.3), color .2s ease; }
+    .speed-section.adjusting .speed-value { color: #fff; transform: scale(1.12); }
+    .speed-range::-webkit-slider-thumb, .seek-range::-webkit-slider-thumb { transition: transform .18s cubic-bezier(.2,.9,.25,1.3), box-shadow .18s ease; }
+    .speed-range:active::-webkit-slider-thumb { transform: scale(1.18); box-shadow: 0 2px 12px rgba(10,132,255,.42); }
+    .seek-range:active::-webkit-slider-thumb { transform: scale(1.18); }
+    .status.status-pop { animation: status-pop .3s ease-out; }
+    .primary.loading { overflow: hidden; }
+    .primary.loading::before {
+      position: absolute; inset: 0; z-index: 1; content: ""; pointer-events: none;
+      background: linear-gradient(105deg, transparent 25%, rgba(255,255,255,.24) 46%, transparent 67%);
+      transform: translateX(-110%); animation: button-shimmer 1.15s ease-in-out infinite;
+    }
+    .primary.speaking { animation: speaking-pulse 1.8s ease-in-out infinite; }
+    .primary, .secondary, .stop, .send-chat, .preview { -webkit-tap-highlight-color: transparent; }
+
+    @keyframes playback-enter {
+      from { opacity: 0; transform: translateY(10px) scale(.975); }
+      to { opacity: 1; transform: translateY(0) scale(1); }
+    }
+    @keyframes settings-enter {
+      from { opacity: 0; transform: translateY(-7px) scaleY(.96); }
+      to { opacity: 1; transform: translateY(0) scaleY(1); }
+    }
+    @keyframes status-pop { from { opacity: .25; transform: translateY(4px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes text-breathe { 50% { border-color: #4c4c51; } }
+    @keyframes button-shimmer { to { transform: translateX(110%); } }
+    @keyframes speaking-pulse { 50% { filter: brightness(1.08); box-shadow: 0 0 0 4px rgba(10,132,255,.10); } }
+    @keyframes send-flight { 50% { transform: translate(3px,-3px) rotate(4deg); } }
+
     @media (max-width: 510px) {
       textarea { min-height: 170px; }
       .section { margin-top: 19px; }
@@ -697,7 +744,7 @@
       .actions { margin-top: 16px; }
     }
     @media (prefers-reduced-motion: reduce) {
-      .liquid-jelly, .segments-indicator { transition: none !important; }
+      *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
@@ -761,6 +808,10 @@
       <div class="playback" id="playback" aria-label="Перемотка записи">
         <input class="seek-range" id="seek" type="range" min="0" max="1" step="0.1" value="0" disabled aria-label="Позиция воспроизведения">
         <div class="playback-time"><span id="currentTime">0:00</span><span id="totalTime">0:00</span></div>
+        <button class="send-chat liquid-jelly" id="sendVoice" type="button">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m21 3-7.7 18-3.8-7.2L3 10.5 21 3Z"/><path d="m9.5 13.8 4.2-4.1"/></svg>
+          <span>Отправить в чат</span>
+        </button>
       </div>
       <div class="status" id="status">Готово к чтению</div>
     </section>
@@ -1016,6 +1067,7 @@
     const seekInput = $('seek');
     const currentTimeBox = $('currentTime');
     const totalTimeBox = $('totalTime');
+    const sendVoiceButton = $('sendVoice');
     const API_BASE = 'https://golos-reader-api.ameliasolder.workers.dev';
 
     const profiles = [
@@ -1042,10 +1094,12 @@
     let selectedSpeed = Number(localStorage.getItem('golos-speed')) || 1;
     let audio = null;
     let audioUrl = '';
+    let audioBlob = null;
     let requestController = null;
     let paused = false;
     let seeking = false;
     let speedUpdateTimer = 0;
+    let speedVisualTimer = 0;
 
     const pauseIcon = '<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
     const playIcon = '<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.7v12.6c0 .8.9 1.3 1.6.8l9-6.3a1 1 0 0 0 0-1.6l-9-6.3A1 1 0 0 0 8 5.7Z"/></svg>';
@@ -1243,6 +1297,8 @@
     function setPlaying(value) {
       panel.classList.toggle('playing', value);
       readButton.textContent = value ? 'Готовлю голос…' : '▶ Читать';
+      readButton.classList.toggle('loading', value);
+      readButton.classList.remove('speaking');
       pauseButton.innerHTML = pauseIcon;
       pauseButton.setAttribute('aria-label', 'Пауза');
       paused = false;
@@ -1263,6 +1319,9 @@
       currentTimeBox.textContent = '0:00';
       totalTimeBox.textContent = '0:00';
       panel.classList.remove('audio-ready');
+      sendVoiceButton.disabled = false;
+      sendVoiceButton.classList.remove('sending', 'sent');
+      sendVoiceButton.querySelector('span').textContent = 'Отправить в чат';
       seeking = false;
     }
 
@@ -1287,6 +1346,7 @@
         URL.revokeObjectURL(audioUrl);
         audioUrl = '';
       }
+      audioBlob = null;
       resetSeek();
     }
 
@@ -1349,6 +1409,7 @@
         }
 
         const blob = await response.blob();
+        audioBlob = blob;
         audioUrl = URL.createObjectURL(blob);
         audio = new Audio(audioUrl);
         audio.playbackRate = selectedSpeed;
@@ -1363,9 +1424,18 @@
         audio.ontimeupdate = syncSeek;
         audio.onplay = () => {
           readButton.textContent = 'Читаю…';
+          readButton.classList.remove('loading');
+          readButton.classList.add('speaking');
           statusBox.textContent = `Читает: ${voice.name}`;
         };
-        audio.onended = () => stopReading('Готово');
+        audio.onended = () => {
+          setPlaying(false);
+          audio.currentTime = 0;
+          panel.classList.add('audio-ready');
+          syncSeek();
+          statusBox.textContent = 'Готово — запись можно отправить в чат';
+          window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
+        };
         audio.onerror = () => stopReading('Не удалось воспроизвести аудио');
         await audio.play();
       } catch (error) {
@@ -1417,7 +1487,44 @@
       updateAudioSpeed(immediate);
     }
 
-    $('speed').addEventListener('input', event => applySpeed(event.target.value));
+    async function sendVoiceToChat() {
+      if (!audioBlob || sendVoiceButton.disabled) return;
+      sendVoiceButton.disabled = true;
+      sendVoiceButton.classList.remove('sent');
+      sendVoiceButton.classList.add('sending');
+      sendVoiceButton.querySelector('span').textContent = 'Отправляю…';
+      statusBox.textContent = 'Отправляю голосовое сообщение';
+      try {
+        const form = new FormData();
+        form.set('voice', audioBlob, 'golos.mp3');
+        if (audio && Number.isFinite(audio.duration)) form.set('duration', String(Math.round(audio.duration)));
+        const response = await fetch(API_BASE + '/send-voice', {
+          method: 'POST',
+          headers: { 'X-Telegram-Init-Data': window.Telegram?.WebApp?.initData || '' },
+          body: form
+        });
+        const result = await response.json().catch(() => ({}));
+        if (!response.ok) throw new Error(result.error || 'Не удалось отправить запись');
+        sendVoiceButton.classList.remove('sending');
+        sendVoiceButton.classList.add('sent');
+        sendVoiceButton.querySelector('span').textContent = 'Отправлено в чат';
+        statusBox.textContent = 'Голосовое сообщение появилось в чате';
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('success');
+      } catch (error) {
+        sendVoiceButton.disabled = false;
+        sendVoiceButton.classList.remove('sending');
+        sendVoiceButton.querySelector('span').textContent = 'Повторить отправку';
+        statusBox.textContent = error.message || 'Не удалось отправить запись';
+        window.Telegram?.WebApp?.HapticFeedback?.notificationOccurred?.('error');
+      }
+    }
+
+    $('speed').addEventListener('input', event => {
+      applySpeed(event.target.value);
+      document.querySelector('.speed-section').classList.add('adjusting');
+      window.clearTimeout(speedVisualTimer);
+      speedVisualTimer = window.setTimeout(() => document.querySelector('.speed-section').classList.remove('adjusting'), 180);
+    });
     $('speed').addEventListener('change', event => applySpeed(event.target.value, true));
     seekInput.addEventListener('pointerdown', () => { seeking = true; });
     seekInput.addEventListener('input', () => {
@@ -1433,6 +1540,7 @@
     readButton.addEventListener('click', () => speakText(textInput.value));
     previewButton.addEventListener('click', () => speakText('Здравствуйте! Теперь текст звучит как живая человеческая речь.', true));
     stopButton.addEventListener('click', () => stopReading());
+    sendVoiceButton.addEventListener('click', sendVoiceToChat);
     pauseButton.addEventListener('click', async () => {
       if (!audio) return;
       if (paused) {
@@ -1450,7 +1558,17 @@
       }
     });
 
-    textInput.addEventListener('input', updateCount);
+    textInput.addEventListener('input', () => {
+      updateCount();
+      textInput.classList.remove('typing');
+      void textInput.offsetWidth;
+      textInput.classList.add('typing');
+    });
+    new MutationObserver(() => {
+      statusBox.classList.remove('status-pop');
+      void statusBox.offsetWidth;
+      statusBox.classList.add('status-pop');
+    }).observe(statusBox, { childList: true, characterData: true, subtree: true });
     window.addEventListener('beforeunload', releaseAudio);
     document.querySelectorAll('[data-style]').forEach(item => item.classList.toggle('active', item.dataset.style === selectedStyle));
     applySpeed(selectedSpeed);
