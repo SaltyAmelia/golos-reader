@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f2f3f5">
+  <meta name="theme-color" content="#000000">
   <title>Голос — чтение текста</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
@@ -271,17 +271,175 @@
       .row { grid-template-columns: 1fr; gap: 16px; }
     }
   </style>
+  <style id="musicload-theme">
+    @import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap');
+
+    :root {
+      color-scheme: dark;
+      --bg: #000;
+      --card: rgba(255,255,255,.09);
+      --text: rgba(255,255,255,.95);
+      --muted: rgba(255,255,255,.55);
+      --line: rgba(255,255,255,.14);
+      --accent: #2997ff;
+      --accent-dark: #5e5ce6;
+      --accent-soft: rgba(41,151,255,.18);
+      --danger: #ff453a;
+    }
+
+    html, body { min-height: 100%; background: #000; }
+    body {
+      overflow-x: hidden;
+      color: var(--text);
+      font-family: 'Outfit', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    button, textarea, input { font-family: inherit; }
+
+    .bg-mesh { position: fixed; inset: -20%; z-index: 0; overflow: hidden; pointer-events: none; }
+    .bg-blob { position: absolute; border-radius: 50%; filter: blur(90px); opacity: .42; }
+    .bg-blob.one {
+      width: 380px; height: 380px; top: -3%; left: -6%;
+      background: radial-gradient(circle, #1a6bff, #5e5ce6 60%, transparent 100%);
+    }
+    .bg-blob.two {
+      width: 350px; height: 350px; top: 31%; right: -12%;
+      background: radial-gradient(circle, #bf5af2, #5e5ce6 60%, transparent 100%);
+    }
+    .bg-blob.three {
+      width: 360px; height: 360px; bottom: -8%; left: -8%; opacity: .32;
+      background: radial-gradient(circle, #2997ff, #0a84ff 52%, transparent 100%);
+    }
+
+    .app {
+      position: relative; z-index: 1;
+      width: min(100%, 660px);
+      padding: max(36px, env(safe-area-inset-top)) 18px max(28px, env(safe-area-inset-bottom));
+    }
+
+    header {
+      position: relative;
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      margin: 0 0 18px; text-align: center;
+    }
+    .hero-eyebrow {
+      margin: 0 0 4px; color: rgba(255,255,255,.34);
+      font-size: 11px; font-weight: 600; letter-spacing: 1.8px;
+    }
+    .hero-title {
+      margin: 0; color: var(--text); font-size: 30px; font-weight: 700;
+      line-height: 1.08; letter-spacing: -.8px;
+    }
+    .hero-title span {
+      background: linear-gradient(125deg, #2997ff, #5e5ce6 52%, #bf5af2);
+      background-clip: text; -webkit-background-clip: text; color: transparent;
+      -webkit-text-fill-color: transparent;
+    }
+    .subtitle { margin: 7px 0 0; color: var(--muted); font-size: 13px; }
+    .badge {
+      position: absolute; top: -5px; right: 0;
+      padding: 7px 10px; border: 1px solid var(--line); border-radius: 20px;
+      background: rgba(255,255,255,.08); color: var(--muted); font-size: 11px;
+      backdrop-filter: blur(20px) saturate(180%); -webkit-backdrop-filter: blur(20px) saturate(180%);
+      cursor: default;
+    }
+
+    .panel {
+      padding: 19px; border: 1px solid var(--line); border-radius: 24px;
+      background: rgba(255,255,255,.09);
+      box-shadow: 0 16px 44px rgba(0,0,0,.28), inset 0 .5px 0 rgba(255,255,255,.15);
+      backdrop-filter: blur(30px) saturate(180%); -webkit-backdrop-filter: blur(30px) saturate(180%);
+    }
+    .label { font-size: 15px; font-weight: 700; }
+    .count { color: var(--muted); }
+    textarea {
+      min-height: 175px; padding: 15px 16px;
+      border: 1px solid rgba(255,255,255,.12); border-radius: 18px;
+      background: rgba(255,255,255,.07); color: var(--text);
+      font-size: 15px; font-weight: 500; line-height: 1.55;
+      box-shadow: inset 0 1px 0 rgba(255,255,255,.04);
+    }
+    textarea:focus { border-color: rgba(41,151,255,.65); box-shadow: 0 0 0 3px rgba(41,151,255,.14); }
+    textarea::placeholder { color: rgba(255,255,255,.28); }
+
+    .section { margin-top: 19px; }
+    .section-title { color: var(--text); font-size: 14px; font-weight: 700; }
+    .voices { gap: 9px; }
+    .voice {
+      min-height: 60px; padding: 10px 11px;
+      border: 1px solid rgba(255,255,255,.10); border-radius: 17px;
+      background: rgba(255,255,255,.065); color: var(--text);
+      transition: transform .14s, background .16s, border-color .16s;
+    }
+    .voice:active { transform: scale(.98); }
+    .voice.active {
+      border-color: rgba(41,151,255,.55); background: rgba(41,151,255,.15);
+      box-shadow: inset 0 .5px 0 rgba(255,255,255,.16), 0 7px 20px rgba(24,92,170,.13);
+    }
+    .voice-icon {
+      border: 1px solid rgba(255,255,255,.08); border-radius: 12px;
+      background: rgba(255,255,255,.08); color: rgba(255,255,255,.72);
+    }
+    .voice.active .voice-icon {
+      border-color: rgba(41,151,255,.40);
+      background: linear-gradient(145deg, #2997ff, #5e5ce6); color: #fff;
+      box-shadow: 0 4px 13px rgba(41,151,255,.28);
+    }
+    .voice-name { font-weight: 700; }
+    .voice-system { color: var(--muted); }
+
+    .preview { color: #69b5ff; font-weight: 600; }
+    .segments {
+      padding: 3px; border: 1px solid rgba(255,255,255,.09); border-radius: 50px;
+      background: rgba(20,20,28,.45);
+    }
+    .segments button { min-height: 36px; border-radius: 50px; color: var(--muted); font-weight: 600; }
+    .segments button.active {
+      background: rgba(255,255,255,.17); color: #fff;
+      box-shadow: 0 1px 4px rgba(0,0,0,.2), inset 0 .5px 0 rgba(255,255,255,.3);
+    }
+    .speed-value { color: #69b5ff; }
+    .speed-range { accent-color: #2997ff; }
+    .speed-scale { color: rgba(255,255,255,.38); }
+
+    .primary, .secondary, .stop { border-radius: 16px; }
+    .primary {
+      background: linear-gradient(145deg, #2997ff, #5e5ce6); color: white;
+      box-shadow: 0 7px 22px rgba(41,151,255,.32), inset 0 .5px 0 rgba(255,255,255,.26);
+      font-weight: 700;
+    }
+    .primary:active { background: linear-gradient(145deg, #1d7fe8, #4b48d9); transform: scale(.985); }
+    .secondary, .stop {
+      border: 1px solid rgba(255,255,255,.10);
+      background: rgba(255,255,255,.09); color: var(--text);
+    }
+    .stop { color: var(--danger); }
+    .status, .hint { color: var(--muted); }
+
+    @media (max-width: 510px) {
+      .app { padding-left: 14px; padding-right: 14px; }
+      header { margin-bottom: 15px; }
+      .hero-title { font-size: 28px; }
+      .badge { top: -18px; right: 1px; }
+      .panel { padding: 15px; border-radius: 22px; }
+      .row { grid-template-columns: 1fr; gap: 17px; }
+      textarea { min-height: 155px; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
+    }
+  </style>
 </head>
 <body>
+  <div class="bg-mesh" aria-hidden="true">
+    <div class="bg-blob one"></div><div class="bg-blob two"></div><div class="bg-blob three"></div>
+  </div>
   <main class="app">
     <header>
-      <div class="brand">
-        <div class="brand-mark" aria-hidden="true">♪</div>
-        <div>
-          <h1>Голос</h1>
-          <p class="subtitle">Озвучивание текста</p>
-        </div>
-      </div>
+      <p class="hero-eyebrow">ОЗВУЧИВАНИЕ ТЕКСТА</p>
+      <h1 class="hero-title">Дайте тексту <span>голос</span></h1>
+      <p class="subtitle">Живые голоса и удобная скорость чтения</p>
       <span class="badge" id="aiStatus">Голоса</span>
     </header>
 
