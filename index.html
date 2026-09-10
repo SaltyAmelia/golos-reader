@@ -533,7 +533,11 @@
   <style id="liquid-controls">
     .liquid-filter-defs { position: absolute; width: 0; height: 0; overflow: hidden; }
     .app { max-width: 620px; }
-    header { min-height: 104px; }
+    .app { padding-top: max(16px, env(safe-area-inset-top)); }
+    .visually-hidden {
+      position: absolute !important; width: 1px; height: 1px; overflow: hidden;
+      clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap;
+    }
     textarea { min-height: 142px; }
     .section { margin-top: 22px; }
     .voice { min-height: 64px; }
@@ -642,7 +646,6 @@
     .playback-time { display: flex; justify-content: space-between; margin-top: 1px; color: #8e8e93; font-size: 10px; font-variant-numeric: tabular-nums; }
 
     @media (max-width: 510px) {
-      header { min-height: 105px; }
       textarea { min-height: 128px; }
       .section { margin-top: 19px; }
       .settings-body { padding: 12px; }
@@ -664,12 +667,7 @@
     <div class="bg-blob one"></div><div class="bg-blob two"></div><div class="bg-blob three"></div>
   </div>
   <main class="app">
-    <header>
-      <p class="hero-eyebrow">ГОЛОС</p>
-      <h1 class="hero-title">Озвучка</h1>
-      <p class="subtitle">Текст · живые голоса · удобная скорость</p>
-      <span class="badge" id="aiStatus">Голоса</span>
-    </header>
+    <span class="visually-hidden" id="aiStatus">Голоса</span>
 
     <section class="panel" id="panel">
       <div class="label-row">
