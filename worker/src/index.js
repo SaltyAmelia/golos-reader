@@ -68,14 +68,12 @@ export default {
 
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/voices') {
-      const response = await eleven('/v1/voices', env);
-      if (!response.ok) return json({ error: 'Не удалось загрузить голоса' }, response.status, env);
-      const data = await response.json();
-      const voices = (data.voices || []).slice(0, 12).map(voice => ({
-        id: voice.voice_id,
-        name: voice.name,
-        category: voice.category || ''
-      }));
+      const voices = [
+        { id: '21m00Tcm4TlvDq8ikWAM', name: 'Мягкий', category: 'ai' },
+        { id: 'pNInz6obpgDQGcFmaJgB', name: 'Глубокий', category: 'ai' },
+        { id: 'Aw4FAjKCGjjNkVhN1Xmq', name: 'Светлый', category: 'ai' },
+        { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'Диктор', category: 'ai' }
+      ];
       return json({ voices }, 200, env);
     }
 
