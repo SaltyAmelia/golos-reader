@@ -572,9 +572,47 @@
     .speed-section { margin-top: 18px; }
     .speed-head .section-title { margin-bottom: 5px; }
     .settings-card { margin-top: 14px; }
-    .settings-card .voices { border-radius: 20px; }
-    .settings-card .voice { min-height: 58px; }
+    .settings-card .voices {
+      gap: 8px; overflow: visible; border: 0; border-radius: 0; background: transparent;
+    }
+    .settings-card .voice {
+      position: relative; min-height: 58px; overflow: hidden; padding: 10px 11px;
+      border: 1px solid #343438; border-radius: 18px; background: #242426;
+      box-shadow: inset 0 1px rgba(255,255,255,.045);
+      transition: border-color .24s ease, background .24s ease, box-shadow .24s ease, transform .22s cubic-bezier(.2,.9,.25,1.25);
+    }
+    .settings-card .voice:nth-child(n) { border: 1px solid #343438; }
+    .settings-card .voice.active {
+      border-color: rgba(10,132,255,.78);
+      background: linear-gradient(145deg, rgba(10,132,255,.22), rgba(94,92,230,.12));
+      box-shadow: inset 0 1px rgba(255,255,255,.10), 0 5px 18px rgba(10,132,255,.12);
+    }
     .settings-card .voice-icon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 12px; }
+    .settings-card .voice > * { position: relative; z-index: 2; }
+    .settings-card .voice::before {
+      position: absolute; width: 110px; height: 110px; left: -27px; top: 50%; z-index: 1;
+      border-radius: 50%; background: radial-gradient(circle, rgba(10,132,255,.34), rgba(94,92,230,.12) 52%, transparent 72%);
+      content: ""; opacity: 0; pointer-events: none; transform: translateY(-50%) scale(.12);
+    }
+    .settings-card .voice.voice-picked { animation: voice-card-pick .46s cubic-bezier(.2,.9,.25,1.25); }
+    .settings-card .voice.voice-picked::before { animation: voice-ripple .55s ease-out; }
+    .settings-card .voice.voice-picked .voice-icon { animation: voice-icon-pick .5s cubic-bezier(.2,.9,.25,1.35); }
+
+    @keyframes voice-card-pick {
+      0% { transform: scale(.97); }
+      58% { transform: scale(1.025); }
+      100% { transform: scale(1); }
+    }
+    @keyframes voice-ripple {
+      0% { opacity: 0; transform: translateY(-50%) scale(.12); }
+      28% { opacity: 1; }
+      100% { opacity: 0; transform: translateY(-50%) scale(1.35); }
+    }
+    @keyframes voice-icon-pick {
+      0% { transform: scale(.78) rotate(-8deg); }
+      60% { transform: scale(1.12) rotate(3deg); }
+      100% { transform: scale(1) rotate(0); }
+    }
 
     .segments { position: relative; isolation: isolate; overflow: hidden; touch-action: none; }
     .segments-indicator {
@@ -1129,11 +1167,17 @@
         button.dataset.profile = profile.id;
         button.innerHTML = `<span class="voice-icon">${profile.icon}</span><span class="voice-copy"><span class="voice-name">${voice ? voice.name : profile.name}</span>${voice ? '' : '<span class="voice-system">Загрузка…</span>'}</span>`;
         button.addEventListener('click', () => {
+          if (selectedProfile === profile.id) return;
           selectedProfile = profile.id;
           localStorage.setItem('golos-profile', selectedProfile);
           updateSettingsSummary();
           window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
-          renderVoices();
+          voicesBox.querySelectorAll('.voice').forEach(item => {
+            item.classList.toggle('active', item === button);
+            item.classList.remove('voice-picked');
+          });
+          void button.offsetWidth;
+          button.classList.add('voice-picked');
         });
         voicesBox.appendChild(button);
       });
