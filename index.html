@@ -3,22 +3,21 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <meta name="theme-color" content="#f6f4ff">
+  <meta name="theme-color" content="#f2f3f5">
   <title>Голос — чтение текста</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     :root {
       color-scheme: light;
-      --bg: #f6f4ff;
+      --bg: #f2f3f5;
       --card: #ffffff;
-      --text: #201b2d;
-      --muted: #756f83;
-      --line: #e9e5f2;
-      --accent: #7257e8;
-      --accent-dark: #5e45d0;
-      --accent-soft: #eeeaff;
+      --text: #16191d;
+      --muted: #6f7782;
+      --line: #dfe3e8;
+      --accent: #2481cc;
+      --accent-dark: #1d6fae;
+      --accent-soft: #eaf4fb;
       --danger: #d74b62;
-      --shadow: 0 12px 38px rgba(67, 47, 124, .09);
     }
 
     * { box-sizing: border-box; }
@@ -26,9 +25,7 @@
     body {
       margin: 0;
       min-height: 100vh;
-      background:
-        radial-gradient(circle at 85% -10%, #ded7ff 0, transparent 31rem),
-        var(--bg);
+      background: var(--bg);
       color: var(--text);
       font: 16px/1.45 Inter, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -55,9 +52,8 @@
       width: 42px;
       height: 42px;
       place-items: center;
-      border-radius: 14px;
+      border-radius: 10px;
       background: var(--accent);
-      box-shadow: 0 8px 20px rgba(114, 87, 232, .27);
       color: white;
       font-size: 21px;
     }
@@ -66,8 +62,8 @@
     .badge {
       padding: 7px 10px;
       border: 0;
-      border-radius: 999px;
-      background: rgba(255,255,255,.75);
+      border-radius: 8px;
+      background: #e4e8ec;
       color: var(--accent-dark);
       font-size: 12px;
       font-weight: 700;
@@ -76,10 +72,9 @@
 
     .panel {
       padding: 18px;
-      border: 1px solid rgba(255,255,255,.8);
-      border-radius: 24px;
-      background: rgba(255,255,255,.94);
-      box-shadow: var(--shadow);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: var(--card);
     }
 
     .label-row {
@@ -99,9 +94,9 @@
       resize: vertical;
       padding: 15px;
       border: 1.5px solid var(--line);
-      border-radius: 17px;
+      border-radius: 10px;
       outline: 0;
-      background: #fbfaff;
+      background: #fff;
       color: var(--text);
       line-height: 1.55;
       transition: border-color .2s, box-shadow .2s;
@@ -127,7 +122,7 @@
       gap: 10px;
       padding: 11px;
       border: 1.5px solid var(--line);
-      border-radius: 15px;
+      border-radius: 10px;
       background: #fff;
       color: var(--text);
       text-align: left;
@@ -142,8 +137,8 @@
       flex: 0 0 34px;
       height: 34px;
       place-items: center;
-      border-radius: 11px;
-      background: #f1eff6;
+      border-radius: 8px;
+      background: #edf0f3;
       font-size: 17px;
     }
     .voice.active .voice-icon { background: var(--accent); color: white; }
@@ -169,8 +164,8 @@
       display: flex;
       gap: 5px;
       padding: 4px;
-      border-radius: 14px;
-      background: #f2f0f7;
+      border-radius: 10px;
+      background: #edf0f3;
     }
     .segments button {
       flex: 1;
@@ -186,8 +181,21 @@
     .segments button.active {
       background: white;
       color: var(--accent-dark);
-      box-shadow: 0 2px 8px rgba(44, 34, 72, .08);
+      box-shadow: 0 1px 2px rgba(20, 28, 36, .08);
     }
+
+    .speed-head { display: flex; align-items: center; justify-content: space-between; }
+    .speed-value { color: var(--accent-dark); font-size: 14px; font-weight: 750; }
+    .speed-range {
+      width: 100%;
+      height: 6px;
+      margin: 11px 0 8px;
+      border-radius: 999px;
+      outline: 0;
+      accent-color: var(--accent);
+      cursor: pointer;
+    }
+    .speed-scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; }
 
     .preview {
       width: 100%;
@@ -204,7 +212,7 @@
     .primary, .secondary, .stop {
       min-height: 52px;
       border: 0;
-      border-radius: 16px;
+      border-radius: 10px;
       font-weight: 800;
       cursor: pointer;
     }
@@ -212,7 +220,6 @@
       flex: 1;
       background: var(--accent);
       color: white;
-      box-shadow: 0 9px 22px rgba(114, 87, 232, .25);
     }
     .primary:active { background: var(--accent-dark); transform: translateY(1px); }
     .secondary, .stop { display: none; width: 54px; background: #f1eff6; color: var(--text); }
@@ -259,7 +266,7 @@
 
     @media (max-width: 510px) {
       .app { padding-left: 12px; padding-right: 12px; }
-      .panel { padding: 15px; border-radius: 21px; }
+      .panel { padding: 15px; border-radius: 12px; }
       textarea { min-height: 170px; }
       .row { grid-template-columns: 1fr; gap: 16px; }
     }
@@ -275,7 +282,7 @@
           <p class="subtitle">Озвучивание текста</p>
         </div>
       </div>
-      <span class="badge" id="aiStatus">AI‑голос</span>
+      <span class="badge" id="aiStatus">Голоса</span>
     </header>
 
     <section class="panel" id="panel">
@@ -301,12 +308,12 @@
           </div>
         </div>
         <div>
-          <h2 class="section-title">Скорость</h2>
-          <div class="segments" id="speeds">
-            <button type="button" data-speed="0.82">0.8×</button>
-            <button type="button" data-speed="1" class="active">1×</button>
-            <button type="button" data-speed="1.18">1.2×</button>
+          <div class="speed-head">
+            <h2 class="section-title">Скорость</h2>
+            <output class="speed-value" id="speedValue" for="speed">1×</output>
           </div>
+          <input class="speed-range" id="speed" type="range" min="0.5" max="4" step="0.1" value="1" aria-label="Скорость чтения">
+          <div class="speed-scale"><span>0.5×</span><span>1×</span><span>4×</span></div>
         </div>
       </div>
 
@@ -317,7 +324,7 @@
       </div>
       <div class="status" id="status">Готово к чтению</div>
     </section>
-    <p class="hint">Нейросетевые голоса ElevenLabs · расходуется лимит аккаунта</p>
+    <p class="hint">Голос создаётся сервисом ElevenLabs</p>
   </main>
 
   <script type="text/plain" id="legacy-browser-voice">
@@ -569,8 +576,14 @@
     const profiles = [
       { id: 'soft', name: 'Мягкий', icon: '◡' },
       { id: 'deep', name: 'Глубокий', icon: '◆' },
-      { id: 'light', name: 'Светлый', icon: '✦' },
+      { id: 'calm', name: 'Спокойный', icon: '○' },
       { id: 'reader', name: 'Диктор', icon: '●' }
+    ];
+    const testedVoices = [
+      { voice_id: 'EXAVITQu4vr4xnSDxMaL', name: 'Мягкий' },
+      { voice_id: 'pNInz6obpgDQGcFmaJgB', name: 'Глубокий' },
+      { voice_id: 'ErXwobaYiN019PkySvjV', name: 'Спокойный' },
+      { voice_id: 'JBFqnCBsd6RMkjVDRZzb', name: 'Диктор' }
     ];
     const manners = {
       calm: { stability: .68, similarity_boost: .78, style: .08 },
@@ -589,9 +602,10 @@
 
     textInput.maxLength = 9000;
     textInput.value = localStorage.getItem('golos-text') || '';
+    if (!profiles.some(profile => profile.id === selectedProfile)) selectedProfile = 'soft';
 
     function setConnected(connected) {
-      aiStatus.textContent = connected ? '✓ AI готов' : 'AI‑голос';
+      aiStatus.textContent = connected ? '✓ Готово' : 'Голоса';
       aiStatus.style.color = connected ? '#27835a' : '';
     }
 
@@ -603,7 +617,7 @@
         button.type = 'button';
         button.className = 'voice' + (selectedProfile === profile.id ? ' active' : '');
         button.dataset.profile = profile.id;
-        button.innerHTML = `<span class="voice-icon">${profile.icon}</span><span class="voice-copy"><span class="voice-name">${voice ? voice.name : profile.name}</span><span class="voice-system">${voice ? 'Нейросетевой голос' : 'Загрузка голоса…'}</span></span>`;
+        button.innerHTML = `<span class="voice-icon">${profile.icon}</span><span class="voice-copy"><span class="voice-name">${voice ? voice.name : profile.name}</span><span class="voice-system">${voice ? 'Нажмите, чтобы выбрать' : 'Загрузка…'}</span></span>`;
         button.addEventListener('click', () => {
           selectedProfile = profile.id;
           localStorage.setItem('golos-profile', selectedProfile);
@@ -628,8 +642,8 @@
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Не удалось загрузить AI‑голоса');
       }
-      const data = await response.json();
-      aiVoices = (data.voices || []).map(voice => ({ voice_id: voice.id, name: voice.name })).filter(voice => voice.voice_id);
+      await response.json();
+      aiVoices = testedVoices;
       if (!aiVoices.length) throw new Error('В аккаунте пока нет доступных голосов');
       setConnected(true);
       renderVoices();
@@ -696,7 +710,7 @@
             voice_id: voice.voice_id,
             voice_settings: {
               ...manner,
-              speed: Math.max(.7, Math.min(1.2, selectedSpeed)),
+              speed: 1,
               use_speaker_boost: true
             }
           })
@@ -716,6 +730,9 @@
         const blob = await response.blob();
         audioUrl = URL.createObjectURL(blob);
         audio = new Audio(audioUrl);
+        audio.playbackRate = selectedSpeed;
+        audio.preservesPitch = true;
+        audio.webkitPreservesPitch = true;
         audio.onplay = () => {
           readButton.textContent = 'Читаю…';
           statusBox.textContent = `Читает: ${voice.name}`;
@@ -745,13 +762,19 @@
       document.querySelectorAll('[data-style]').forEach(item => item.classList.toggle('active', item === button));
     });
 
-    $('speeds').addEventListener('click', event => {
-      const button = event.target.closest('button[data-speed]');
-      if (!button) return;
-      selectedSpeed = Number(button.dataset.speed);
+    function applySpeed(value) {
+      selectedSpeed = Math.max(.5, Math.min(4, Number(value) || 1));
+      $('speed').value = String(selectedSpeed);
+      $('speedValue').textContent = `${selectedSpeed.toFixed(1).replace('.0', '')}×`;
       localStorage.setItem('golos-speed', String(selectedSpeed));
-      document.querySelectorAll('[data-speed]').forEach(item => item.classList.toggle('active', item === button));
-    });
+      if (audio) {
+        audio.playbackRate = selectedSpeed;
+        audio.preservesPitch = true;
+        audio.webkitPreservesPitch = true;
+      }
+    }
+
+    $('speed').addEventListener('input', event => applySpeed(event.target.value));
 
     readButton.addEventListener('click', () => speakText(textInput.value));
     previewButton.addEventListener('click', () => speakText('Здравствуйте! Теперь текст звучит как живая человеческая речь.', true));
@@ -774,7 +797,7 @@
     textInput.addEventListener('input', updateCount);
     window.addEventListener('beforeunload', releaseAudio);
     document.querySelectorAll('[data-style]').forEach(item => item.classList.toggle('active', item.dataset.style === selectedStyle));
-    document.querySelectorAll('[data-speed]').forEach(item => item.classList.toggle('active', Number(item.dataset.speed) === selectedSpeed));
+    applySpeed(selectedSpeed);
     renderVoices();
     updateCount();
     setConnected(false);
