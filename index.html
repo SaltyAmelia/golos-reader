@@ -620,6 +620,27 @@
     .speed-range::-moz-range-progress { height: 4px; border-radius: 99px; background: #0a84ff; }
     .speed-range::-moz-range-thumb { width: 18px; height: 18px; border: 1px solid rgba(255,255,255,.45); border-radius: 50%; background: #0a84ff; }
 
+    .playback { display: none; margin-top: 14px; padding: 12px 14px 10px; border: 1px solid #303035; border-radius: 20px; background: #1c1c1e; }
+    .audio-ready .playback { display: block; }
+    .seek-range {
+      width: 100%; height: 22px; margin: 0; appearance: none; -webkit-appearance: none;
+      background: transparent; cursor: pointer;
+    }
+    .seek-range:disabled { cursor: wait; opacity: .55; }
+    .seek-range::-webkit-slider-runnable-track {
+      height: 4px; border-radius: 99px;
+      background: linear-gradient(to right, #0a84ff 0 var(--seek-progress,0%), #38383a var(--seek-progress,0%) 100%);
+    }
+    .seek-range::-webkit-slider-thumb {
+      width: 16px; height: 16px; margin-top: -6px; appearance: none; -webkit-appearance: none;
+      border: 1px solid rgba(255,255,255,.52); border-radius: 50%; background: #f5f5f7;
+      box-shadow: 0 1px 5px rgba(0,0,0,.34);
+    }
+    .seek-range::-moz-range-track { height: 4px; border: 0; border-radius: 99px; background: #38383a; }
+    .seek-range::-moz-range-progress { height: 4px; border-radius: 99px; background: #0a84ff; }
+    .seek-range::-moz-range-thumb { width: 16px; height: 16px; border: 1px solid rgba(255,255,255,.52); border-radius: 50%; background: #f5f5f7; }
+    .playback-time { display: flex; justify-content: space-between; margin-top: 1px; color: #8e8e93; font-size: 10px; font-variant-numeric: tabular-nums; }
+
     @media (max-width: 510px) {
       header { min-height: 105px; }
       textarea { min-height: 128px; }
@@ -693,6 +714,10 @@
         <button class="primary liquid-jelly" id="read" type="button">▶ Читать</button>
         <button class="secondary liquid-jelly" id="pause" type="button" aria-label="Пауза">Ⅱ</button>
         <button class="stop liquid-jelly" id="stop" type="button" aria-label="Остановить">■</button>
+      </div>
+      <div class="playback" id="playback" aria-label="Перемотка записи">
+        <input class="seek-range" id="seek" type="range" min="0" max="1" step="0.1" value="0" disabled aria-label="Позиция воспроизведения">
+        <div class="playback-time"><span id="currentTime">0:00</span><span id="totalTime">0:00</span></div>
       </div>
       <div class="status" id="status">Готово к чтению</div>
     </section>
@@ -945,6 +970,9 @@
     const statusBox = $('status');
     const countBox = $('count');
     const aiStatus = $('aiStatus');
+    const seekInput = $('seek');
+    const currentTimeBox = $('currentTime');
+    const totalTimeBox = $('totalTime');
     const API_BASE = 'https://golos-reader-api.ameliasolder.workers.dev';
 
     const profiles = [
@@ -973,6 +1001,7 @@
     let audioUrl = '';
     let requestController = null;
     let paused = false;
+    let seeking = false;
 
     textInput.maxLength = 9000;
     textInput.value = localStorage.getItem('golos-text') || '';
@@ -1130,6 +1159,34 @@
       paused = false;
     }
 
+    function formatTime(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return '0:00';
+      const minutes = Math.floor(seconds / 60);
+      const rest = Math.floor(seconds % 60);
+      return `${minutes}:${String(rest).padStart(2, '0')}`;
+    }
+
+    function resetSeek() {
+      seekInput.disabled = true;
+      seekInput.max = '1';
+      seekInput.value = '0';
+      seekInput.style.setProperty('--seek-progress', '0%');
+      currentTimeBox.textContent = '0:00';
+      totalTimeBox.textContent = '0:00';
+      panel.classList.remove('audio-ready');
+      seeking = false;
+    }
+
+    function syncSeek() {
+      if (!audio || !Number.isFinite(audio.duration) || audio.duration <= 0) return;
+      seekInput.max = String(audio.duration);
+      if (!seeking) seekInput.value = String(audio.currentTime);
+      const position = Number(seekInput.value);
+      seekInput.style.setProperty('--seek-progress', `${Math.max(0, Math.min(100, position / audio.duration * 100))}%`);
+      currentTimeBox.textContent = formatTime(position);
+      totalTimeBox.textContent = formatTime(audio.duration);
+    }
+
     function releaseAudio() {
       if (audio) {
         audio.pause();
@@ -1140,6 +1197,7 @@
         URL.revokeObjectURL(audioUrl);
         audioUrl = '';
       }
+      resetSeek();
     }
 
     function stopReading(message = 'Остановлено') {
@@ -1206,6 +1264,13 @@
         audio.playbackRate = selectedSpeed;
         audio.preservesPitch = true;
         audio.webkitPreservesPitch = true;
+        panel.classList.add('audio-ready');
+        audio.onloadedmetadata = () => {
+          seekInput.disabled = false;
+          syncSeek();
+        };
+        audio.ondurationchange = syncSeek;
+        audio.ontimeupdate = syncSeek;
         audio.onplay = () => {
           readButton.textContent = 'Читаю…';
           statusBox.textContent = `Читает: ${voice.name}`;
@@ -1253,6 +1318,16 @@
     }
 
     $('speed').addEventListener('input', event => applySpeed(event.target.value));
+    seekInput.addEventListener('pointerdown', () => { seeking = true; });
+    seekInput.addEventListener('input', () => {
+      if (!audio || !Number.isFinite(audio.duration)) return;
+      audio.currentTime = Math.max(0, Math.min(audio.duration, Number(seekInput.value)));
+      syncSeek();
+    });
+    const finishSeeking = () => { seeking = false; syncSeek(); };
+    seekInput.addEventListener('pointerup', finishSeeking);
+    seekInput.addEventListener('pointercancel', finishSeeking);
+    seekInput.addEventListener('change', finishSeeking);
 
     readButton.addEventListener('click', () => speakText(textInput.value));
     previewButton.addEventListener('click', () => speakText('Здравствуйте! Теперь текст звучит как живая человеческая речь.', true));
@@ -1276,6 +1351,7 @@
     window.addEventListener('beforeunload', releaseAudio);
     document.querySelectorAll('[data-style]').forEach(item => item.classList.toggle('active', item.dataset.style === selectedStyle));
     applySpeed(selectedSpeed);
+    resetSeek();
     renderVoices();
     initLiquidTouch();
     initStyleSlider();
