@@ -561,6 +561,15 @@
     .settings-card summary > span:first-of-type { flex: 1; }
     .settings-summary { color: #98989d; font-size: 12px; font-weight: 500; }
     .settings-card .row { margin: 0; padding: 4px 14px 16px; border-top: 1px solid #38383a; }
+    .settings-body { padding: 14px; border-top: 1px solid #38383a; }
+    .settings-group + .settings-group { margin-top: 17px; }
+    .settings-group .section-title { margin-bottom: 9px; }
+    .speed-section { margin-top: 18px; }
+    .speed-head .section-title { margin-bottom: 5px; }
+    .settings-card { margin-top: 14px; }
+    .settings-card .voices { border-radius: 20px; }
+    .settings-card .voice { min-height: 58px; }
+    .settings-card .voice-icon { width: 36px; height: 36px; flex-basis: 36px; border-radius: 12px; }
 
     .segments { position: relative; isolation: isolate; overflow: hidden; touch-action: none; }
     .segments-indicator {
@@ -598,7 +607,10 @@
     .liquid-jelly.liquid-pressed { transition: none; filter: brightness(1.12); }
 
     .speed-range { height: 28px; margin: 1px 0 3px; appearance: none; -webkit-appearance: none; background: transparent; }
-    .speed-range::-webkit-slider-runnable-track { height: 4px; border-radius: 99px; background: #38383a; }
+    .speed-range::-webkit-slider-runnable-track {
+      height: 4px; border-radius: 99px;
+      background: linear-gradient(to right, #0a84ff 0 var(--speed-progress,14.29%), #38383a var(--speed-progress,14.29%) 100%);
+    }
     .speed-range::-webkit-slider-thumb {
       width: 18px; height: 18px; margin-top: -7px; appearance: none; -webkit-appearance: none;
       border: 1px solid rgba(255,255,255,.45); border-radius: 50%; background: #0a84ff;
@@ -612,7 +624,7 @@
       header { min-height: 105px; }
       textarea { min-height: 128px; }
       .section { margin-top: 19px; }
-      .settings-card .row { gap: 14px; }
+      .settings-body { padding: 12px; }
       .actions { margin-top: 16px; }
     }
     @media (prefers-reduced-motion: reduce) {
@@ -645,34 +657,34 @@
       </div>
       <textarea id="text" maxlength="12000" placeholder="Вставьте или напишите текст здесь…"></textarea>
 
-      <div class="section">
-        <h2 class="section-title">Выберите голос</h2>
-        <div class="voices" id="voices"></div>
-        <button class="preview liquid-jelly" id="preview" type="button">▶ Послушать голос</button>
+      <div class="section speed-section">
+        <div class="speed-head">
+          <h2 class="section-title">Скорость чтения</h2>
+          <output class="speed-value" id="speedValue" for="speed">1×</output>
+        </div>
+        <input class="speed-range" id="speed" type="range" min="0.5" max="4" step="0.1" value="1" aria-label="Скорость чтения">
+        <div class="speed-scale"><span>0.5×</span><span>4×</span></div>
       </div>
 
       <details class="settings-card">
         <summary>
           <span>Настройки чтения</span>
-          <span class="settings-summary" id="settingsSummary">Обычно · 1×</span>
+          <span class="settings-summary" id="settingsSummary">Мягкий · Обычно</span>
         </summary>
-        <div class="row">
-          <div>
-            <h2 class="section-title">Манера</h2>
+        <div class="settings-body">
+          <div class="settings-group">
+            <h2 class="section-title">Голос</h2>
+            <div class="voices" id="voices"></div>
+            <button class="preview liquid-jelly" id="preview" type="button">▶ Послушать</button>
+          </div>
+          <div class="settings-group">
+            <h2 class="section-title">Интонация</h2>
             <div class="segments segmented-slider" id="styles">
               <div class="segments-indicator segmented-indicator" id="styleIndicator"></div>
               <button type="button" data-style="calm">Спокойно</button>
               <button type="button" data-style="natural" class="active">Обычно</button>
               <button type="button" data-style="expressive">Ярко</button>
             </div>
-          </div>
-          <div>
-            <div class="speed-head">
-              <h2 class="section-title">Скорость</h2>
-              <output class="speed-value" id="speedValue" for="speed">1×</output>
-            </div>
-            <input class="speed-range" id="speed" type="range" min="0.5" max="4" step="0.1" value="1" aria-label="Скорость чтения">
-            <div class="speed-scale"><span>0.5×</span><span>1×</span><span>4×</span></div>
           </div>
         </div>
       </details>
@@ -969,8 +981,8 @@
     const styleNames = { calm: 'Спокойно', natural: 'Обычно', expressive: 'Ярко' };
 
     function updateSettingsSummary() {
-      const speedText = `${selectedSpeed.toFixed(1).replace('.0', '')}×`;
-      $('settingsSummary').textContent = `${styleNames[selectedStyle] || 'Обычно'} · ${speedText}`;
+      const profile = profiles.find(item => item.id === selectedProfile) || profiles[0];
+      $('settingsSummary').textContent = `${profile.name} · ${styleNames[selectedStyle] || 'Обычно'}`;
     }
 
     function initLiquidTouch(root = document) {
@@ -1075,10 +1087,11 @@
         button.type = 'button';
         button.className = 'voice liquid-jelly' + (selectedProfile === profile.id ? ' active' : '');
         button.dataset.profile = profile.id;
-        button.innerHTML = `<span class="voice-icon">${profile.icon}</span><span class="voice-copy"><span class="voice-name">${voice ? voice.name : profile.name}</span><span class="voice-system">${voice ? 'Нажмите, чтобы выбрать' : 'Загрузка…'}</span></span>`;
+        button.innerHTML = `<span class="voice-icon">${profile.icon}</span><span class="voice-copy"><span class="voice-name">${voice ? voice.name : profile.name}</span>${voice ? '' : '<span class="voice-system">Загрузка…</span>'}</span>`;
         button.addEventListener('click', () => {
           selectedProfile = profile.id;
           localStorage.setItem('golos-profile', selectedProfile);
+          updateSettingsSummary();
           window.Telegram?.WebApp?.HapticFeedback?.selectionChanged?.();
           renderVoices();
         });
@@ -1228,6 +1241,7 @@
     function applySpeed(value) {
       selectedSpeed = Math.max(.5, Math.min(4, Number(value) || 1));
       $('speed').value = String(selectedSpeed);
+      $('speed').style.setProperty('--speed-progress', `${((selectedSpeed - .5) / 3.5) * 100}%`);
       $('speedValue').textContent = `${selectedSpeed.toFixed(1).replace('.0', '')}×`;
       localStorage.setItem('golos-speed', String(selectedSpeed));
       updateSettingsSummary();
