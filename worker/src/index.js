@@ -38,7 +38,6 @@ async function validateTelegram(initData, botToken) {
   const authDate = Number(params.get('auth_date'));
   if (!receivedHash || !authDate || Math.abs(Date.now() / 1000 - authDate) > 3600) return false;
   params.delete('hash');
-  params.delete('signature');
   const checkString = [...params.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
     .map(([key, value]) => key + '=' + value)
