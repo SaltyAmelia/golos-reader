@@ -41,7 +41,7 @@ async function validateTelegram(initData, botToken) {
   params.delete('signature');
   const checkString = [...params.entries()]
     .sort(([a], [b]) => a.localeCompare(b))
-    .map(([key, value]) => `${key}=${value}`)
+    .map(([key, value]) => key + '=' + value)
     .join('\n');
   const secretKey = await hmac('WebAppData', botToken);
   const calculatedHash = toHex(await hmac(secretKey, checkString));
@@ -49,7 +49,7 @@ async function validateTelegram(initData, botToken) {
 }
 
 async function eleven(path, env, options = {}) {
-  return fetch(`https://api.elevenlabs.io${path}`, {
+  return fetch('https://api.elevenlabs.io' + path, {
     ...options,
     headers: {
       ...(options.headers || {}),
@@ -88,7 +88,7 @@ export default {
       if (!text || text.length > 9000 || !/^[a-zA-Z0-9_-]{8,}$/.test(voiceId)) {
         return json({ error: 'Проверьте текст и голос' }, 400, env);
       }
-      const response = await eleven(`/v1/text-to-speech/${encodeURIComponent(voiceId)}?output_format=mp3_44100_128`, env, {
+      const response = await eleven('/v1/text-to-speech/' + encodeURIComponent(voiceId) + '?output_format=mp3_44100_128', env, {
         method: 'POST',
         headers: { 'Accept': 'audio/mpeg', 'Content-Type': 'application/json' },
         body: JSON.stringify({
