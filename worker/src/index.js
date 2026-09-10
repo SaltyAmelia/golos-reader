@@ -69,9 +69,9 @@ export default {
     const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/voices') {
       const voices = [
-        { id: '21m00Tcm4TlvDq8ikWAM', name: 'Мягкий', category: 'ai' },
+        { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Мягкий', category: 'ai' },
         { id: 'pNInz6obpgDQGcFmaJgB', name: 'Глубокий', category: 'ai' },
-        { id: 'Aw4FAjKCGjjNkVhN1Xmq', name: 'Светлый', category: 'ai' },
+        { id: 'ErXwobaYiN019PkySvjV', name: 'Спокойный', category: 'ai' },
         { id: 'JBFqnCBsd6RMkjVDRZzb', name: 'Диктор', category: 'ai' }
       ];
       return json({ voices }, 200, env);
