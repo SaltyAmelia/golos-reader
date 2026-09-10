@@ -302,15 +302,15 @@
     const countBox = document.getElementById('count');
 
     const profiles = [
-      { id: 'soft', name: 'Мягкий', icon: '◡', pitch: 1.08 },
-      { id: 'deep', name: 'Глубокий', icon: '◆', pitch: 0.88 },
-      { id: 'light', name: 'Светлый', icon: '✦', pitch: 1.18 },
-      { id: 'reader', name: 'Диктор', icon: '●', pitch: 0.98 }
+      { id: 'soft', name: 'Мягкий', icon: '◡', rate: .96 },
+      { id: 'deep', name: 'Глубокий', icon: '◆', rate: .92 },
+      { id: 'light', name: 'Светлый', icon: '✦', rate: 1.03 },
+      { id: 'reader', name: 'Диктор', icon: '●', rate: 1 }
     ];
     const styles = {
-      calm: { rate: .90, pitch: .98, pause: 1.24 },
-      natural: { rate: 1, pitch: 1, pause: 1 },
-      expressive: { rate: 1.03, pitch: 1.04, pause: .88 }
+      calm: { rate: .92, pause: 1.15 },
+      natural: { rate: 1, pause: 1 },
+      expressive: { rate: 1.05, pause: .9 }
     };
 
     let availableVoices = [];
@@ -325,7 +325,17 @@
     function preferredVoices() {
       const list = synth ? synth.getVoices() : [];
       const russian = list.filter(v => /^ru\b/i.test(v.lang));
-      return russian.length ? russian : list;
+      const candidates = russian.length ? russian : list;
+      return [...candidates].sort((a, b) => voiceQuality(b) - voiceQuality(a));
+    }
+
+    function voiceQuality(voice) {
+      const name = voice.name.toLowerCase();
+      let score = 0;
+      if (/natural|нейрон|neural|online/.test(name)) score += 20;
+      if (/google|microsoft/.test(name)) score += 4;
+      if (!voice.localService) score += 6;
+      return score;
     }
 
     function renderVoices() {
@@ -352,7 +362,7 @@
       return { profile: profiles[index], voice: availableVoices[index % Math.max(availableVoices.length, 1)] };
     }
 
-    function splitLong(value, limit = 230) {
+    function splitLong(value, limit = 700) {
       if (value.length <= limit) return [value];
       const result = [];
       let rest = value;
@@ -369,11 +379,22 @@
     function makeChunks(value) {
       const clean = value.replace(/\r/g, '').replace(/[ \t]+/g, ' ').trim();
       if (!clean) return [];
-      const pieces = clean.match(/[^.!?…\n]+[.!?…]+|[^.!?…\n]+$|\n+/g) || [clean];
-      return pieces
+      const sentences = (clean.match(/[^.!?…\n]+[.!?…]+|[^.!?…\n]+$|\n+/g) || [clean])
         .map(x => x.trim())
         .filter(Boolean)
         .flatMap(x => splitLong(x));
+      const chunks = [];
+      let buffer = '';
+      sentences.forEach(sentence => {
+        if (buffer && buffer.length + sentence.length + 1 > 700) {
+          chunks.push(buffer);
+          buffer = sentence;
+        } else {
+          buffer = buffer ? `${buffer} ${sentence}` : sentence;
+        }
+      });
+      if (buffer) chunks.push(buffer);
+      return chunks;
     }
 
     function setPlaying(value) {
@@ -428,13 +449,12 @@
         } else {
           utterance.lang = 'ru-RU';
         }
-        const variation = ((index % 3) - 1) * .012;
-        utterance.rate = Math.max(.55, Math.min(1.6, selectedSpeed * manner.rate + variation));
-        utterance.pitch = Math.max(.55, Math.min(1.55, chosen.profile.pitch * manner.pitch - variation));
+        utterance.rate = Math.max(.55, Math.min(1.6, selectedSpeed * manner.rate * chosen.profile.rate));
+        utterance.pitch = 1;
         utterance.volume = 1;
         utterance.onend = () => {
           if (ownSession !== session) return;
-          const punctuationPause = /[!?…]$/.test(phrase) ? 220 : 135;
+          const punctuationPause = /[!?…]$/.test(phrase) ? 150 : 85;
           window.setTimeout(() => speakChunk(index + 1), punctuationPause * manner.pause);
         };
         utterance.onerror = event => {
