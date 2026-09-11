@@ -1121,6 +1121,8 @@
     let speedUpdateTimer = 0;
     let speedVisualTimer = 0;
     let quotaRemaining = null;
+    let speechProvider = 'elevenlabs';
+    let monthlyLimit = 0;
 
     const pauseIcon = '<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="5" width="4" height="14" rx="1"/><rect x="14" y="5" width="4" height="14" rx="1"/></svg>';
     const playIcon = '<svg class="control-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.7v12.6c0 .8.9 1.3 1.6.8l9-6.3a1 1 0 0 0 0-1.6l-9-6.3A1 1 0 0 0 8 5.7Z"/></svg>';
@@ -1307,8 +1309,10 @@
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Не удалось загрузить AI‑голоса');
       }
-      await response.json();
-      aiVoices = testedVoices;
+      const data = await response.json();
+      speechProvider = data.provider || 'elevenlabs';
+      aiVoices = (data.voices || []).map(voice => ({ voice_id: voice.id || voice.voice_id, name: voice.name }));
+      if (!aiVoices.length) aiVoices = testedVoices;
       if (!aiVoices.length) throw new Error('В аккаунте пока нет доступных голосов');
       setConnected(true);
       renderVoices();
@@ -1326,6 +1330,11 @@
     function renderUsage() {
       quotaBox.classList.remove('low', 'empty');
       if (!Number.isFinite(quotaRemaining)) {
+        if (speechProvider === 'azure' && monthlyLimit) {
+          quotaRemainingBox.textContent = `до ${monthlyLimit.toLocaleString('ru-RU')} символов`;
+          quotaEstimateBox.textContent = 'бесплатно каждый месяц';
+          return;
+        }
         quotaRemainingBox.textContent = 'Скрыт настройками ключа';
         quotaEstimateBox.textContent = 'уточнится при озвучке';
         return;
@@ -1358,7 +1367,9 @@
         });
         const data = await response.json().catch(() => ({}));
         if (!response.ok) throw new Error(data.error || 'Лимит недоступен');
-        quotaRemaining = Number(data.remaining);
+        speechProvider = data.provider || speechProvider;
+        monthlyLimit = Number(data.limit) || 0;
+        quotaRemaining = data.remaining === null ? null : Number(data.remaining);
       } catch (_) {
         quotaRemaining = null;
       }
@@ -1460,6 +1471,7 @@
           body: JSON.stringify({
             text,
             voice_id: voice.voice_id,
+            style: selectedStyle,
             voice_settings: {
               ...manner,
               speed: 1,
