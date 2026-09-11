@@ -1404,7 +1404,7 @@
             reason = errorData.error || errorData?.detail?.message || '';
           } catch (_) {}
           if (response.status === 401) throw new Error('Откройте приложение из Telegram');
-          if (response.status === 429) throw new Error('Закончился лимит озвучивания');
+          if (response.status === 429) throw new Error(reason || 'Закончился лимит озвучивания');
           throw new Error(reason || `Сервис вернул ошибку ${response.status}`);
         }
 
