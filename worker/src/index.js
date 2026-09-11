@@ -74,10 +74,11 @@ export default {
     if (origin && origin !== env.ALLOWED_ORIGIN) return json({ error: 'Forbidden origin' }, 403, env);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: corsHeaders(env) });
 
+    const url = new URL(request.url);
+
     const authorized = await validateTelegram(request.headers.get('X-Telegram-Init-Data'), env.TELEGRAM_BOT_TOKEN);
     if (!authorized) return json({ error: 'Откройте приложение из Telegram' }, 401, env);
 
-    const url = new URL(request.url);
     if (request.method === 'GET' && url.pathname === '/voices') {
       const voices = [
         { id: 'EXAVITQu4vr4xnSDxMaL', name: 'Мягкий', category: 'ai' },
@@ -106,8 +107,20 @@ export default {
         })
       });
       if (!response.ok) {
-        const status = response.status === 429 ? 429 : 502;
-        return json({ error: response.status === 429 ? 'Закончился лимит озвучивания' : 'Не удалось создать речь' }, status, env);
+        const failure = await response.json().catch(() => ({}));
+        const detail = failure?.detail || failure;
+        const code = String(detail?.code || detail?.type || '');
+        const message = String(detail?.message || '');
+        if (response.status === 429 || code === 'quota_exceeded' || /quota|credits remaining/i.test(message)) {
+          return json({ error: 'В ElevenLabs закончился лимит символов. Пополните баланс аккаунта.' }, 429, env);
+        }
+        if (response.status === 401) {
+          return json({ error: 'Ключ ElevenLabs больше не действует. Создайте новый ключ в аккаунте.' }, 502, env);
+        }
+        if (/voice.*not.*found|voice.*unavailable/i.test(message)) {
+          return json({ error: 'Этот голос сейчас недоступен. Выберите другой.' }, 502, env);
+        }
+        return json({ error: message || 'Не удалось создать речь' }, 502, env);
       }
       return new Response(response.body, {
         status: 200,
