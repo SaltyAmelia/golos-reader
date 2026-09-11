@@ -1326,8 +1326,8 @@
     function renderUsage() {
       quotaBox.classList.remove('low', 'empty');
       if (!Number.isFinite(quotaRemaining)) {
-        quotaRemainingBox.textContent = 'Недоступно';
-        quotaEstimateBox.textContent = '';
+        quotaRemainingBox.textContent = 'Скрыт настройками ключа';
+        quotaEstimateBox.textContent = 'уточнится при озвучке';
         return;
       }
       quotaRemainingBox.textContent = `${quotaRemaining.toLocaleString('ru-RU')} символов`;
@@ -1470,12 +1470,20 @@
 
         if (!response.ok) {
           let reason = '';
+          let remaining = null;
           try {
             const errorData = await response.json();
             reason = errorData.error || errorData?.detail?.message || '';
+            remaining = errorData.remaining;
           } catch (_) {}
           if (response.status === 401) throw new Error('Откройте приложение из Telegram');
-          if (response.status === 429) throw new Error(reason || 'Закончился лимит озвучивания');
+          if (response.status === 429) {
+            if (Number.isFinite(Number(remaining))) {
+              quotaRemaining = Number(remaining);
+              renderUsage();
+            }
+            throw new Error(reason || 'Закончился лимит озвучивания');
+          }
           throw new Error(reason || `Сервис вернул ошибку ${response.status}`);
         }
 
